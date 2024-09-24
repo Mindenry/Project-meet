@@ -190,12 +190,9 @@ const RoomsSection = () => {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>ชื่อห้อง</TableHead>
-                <TableHead>ชั้น</TableHead>
                 <TableHead>ตึก</TableHead>
+                <TableHead>ชั้น</TableHead>
                 <TableHead>ประเภท</TableHead>
-                <TableHead>วว/ดด/ปป</TableHead>
-                <TableHead>ตั้งแต่เวลา</TableHead>
-                <TableHead>ถึง</TableHead>
                 <TableHead>สถานะ</TableHead>
                 <TableHead>การจัดการ</TableHead>
               </TableRow>
@@ -205,12 +202,9 @@ const RoomsSection = () => {
                 <TableRow key={room.id}>
                   <TableCell>{room.id}</TableCell>
                   <TableCell>{room.name}</TableCell>
-                  <TableCell>{room.floor}</TableCell>
                   <TableCell>{room.building}</TableCell>
+                  <TableCell>{room.floor}</TableCell>
                   <TableCell>{room.type}</TableCell>
-                  <TableCell>{room.date || "-"}</TableCell>
-                  <TableCell>{room.startTime || "-"}</TableCell>
-                  <TableCell>{room.endTime || "-"}</TableCell>
                   <TableCell>{room.status}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -294,9 +288,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
     building: "",
     capacity: "",
     type: "ธรรมดา",
-    date: "",
-    startTime: "",
-    endTime: "",
     status: "ว่าง",
   });
 
@@ -311,9 +302,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
         building: "",
         capacity: "",
         type: "ธรรมดา",
-        date: "",
-        startTime: "",
-        endTime: "",
         status: "ว่าง",
       });
     }
@@ -349,26 +337,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="floor" className="text-right">
-              ชั้น
-            </Label>
-            <Select
-              value={formData.floor}
-              onValueChange={(value) => handleChange("floor", value)}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="เลือกชั้น" />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5].map((floor) => (
-                  <SelectItem key={floor} value={floor.toString()}>
-                    {floor}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="building" className="text-right">
               ตึก
             </Label>
@@ -383,6 +351,26 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 {["อาคาร A", "อาคาร B", "อาคาร C"].map((building) => (
                   <SelectItem key={building} value={building}>
                     {building}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="floor" className="text-right">
+              ชั้น
+            </Label>
+            <Select
+              value={formData.floor}
+              onValueChange={(value) => handleChange("floor", value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="เลือกชั้น" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5].map((floor) => (
+                  <SelectItem key={floor} value={floor.toString()}>
+                    {floor}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -419,42 +407,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              วันที่
-            </Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleChange("date", e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startTime" className="text-right">
-              เวลาเริ่ม
-            </Label>
-            <Input
-              id="startTime"
-              type="time"
-              value={formData.startTime}
-              onChange={(e) => handleChange("startTime", e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="endTime" className="text-right">
-              เวลาสิ้นสุด
-            </Label>
-            <Input
-              id="endTime"
-              type="time"
-              value={formData.endTime}
-              onChange={(e) => handleChange("endTime", e.target.value)}
-              className="col-span-3"
-            />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="status" className="text-right">
@@ -517,9 +469,6 @@ const ApproveDialog = ({ isOpen, onClose, onApprove, room }) => {
     building: "",
     capacity: "",
     type: "VIP",
-    date: "",
-    startTime: "",
-    endTime: "",
     status: "อนุมัติ",
     reason: "",
   });
@@ -559,23 +508,23 @@ const ApproveDialog = ({ isOpen, onClose, onApprove, room }) => {
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="floor" className="text-right">
-              ชั้น
-            </Label>
-            <Input
-              id="floor"
-              value={formData.floor}
-              className="col-span-3"
-              readOnly
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="building" className="text-right">
               ตึก
             </Label>
             <Input
               id="building"
               value={formData.building}
+              className="col-span-3"
+              readOnly
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="floor" className="text-right">
+              ชั้น
+            </Label>
+            <Input
+              id="floor"
+              value={formData.floor}
               className="col-span-3"
               readOnly
             />

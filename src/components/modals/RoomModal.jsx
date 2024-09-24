@@ -25,9 +25,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
     building: "",
     capacity: "",
     type: "",
-    date: "",
-    startTime: "",
-    endTime: "",
     status: "ว่าง",
   });
 
@@ -42,9 +39,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
         building: "",
         capacity: "",
         type: "",
-        date: "",
-        startTime: "",
-        endTime: "",
         status: "ว่าง",
       });
     }
@@ -173,45 +167,6 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">
-                วันที่
-              </Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startTime" className="text-right">
-                เวลาเริ่ม
-              </Label>
-              <Input
-                id="startTime"
-                name="startTime"
-                type="time"
-                value={formData.startTime}
-                onChange={handleChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endTime" className="text-right">
-                เวลาสิ้นสุด
-              </Label>
-              <Input
-                id="endTime"
-                name="endTime"
-                type="time"
-                value={formData.endTime}
-                onChange={handleChange}
-                className="col-span-3"
-              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="status" className="text-right">

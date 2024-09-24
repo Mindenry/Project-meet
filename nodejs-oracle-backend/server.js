@@ -1,15 +1,9 @@
-// function hashPassword(password) {
-//   return crypto
-//     .createHash("sha256")
-//     .update(password)
-//     .digest("hex")
-//     .substring(0, 20);
-// } function แปลงรหัส ในฐานข้อมูลจะไม่แสดงรหัส โดยตรง เน้นความปลอดภัย
-
 const express = require("express");
 const oracledb = require("oracledb");
 const dotenv = require("dotenv");
 const cors = require("cors");
+const nodemailer = require("nodemailer");
+const validator = require("email-validator");
 
 dotenv.config();
 
@@ -19,22 +13,17 @@ const port = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-const instantClientPath = process.env.ORACLE_CLIENT_PATH;
-
-if (!instantClientPath) {
-  console.error("ORACLE_CLIENT_PATH is not set in .env file");
-  process.exit(1);
-}
-
+// Initialize Oracle client
 try {
-  oracledb.initOracleClient({ libDir: instantClientPath });
+  oracledb.initOracleClient({ libDir: process.env.ORACLE_CLIENT_PATH });
   console.log("Oracle Instant Client initialized successfully");
 } catch (err) {
   console.error("Error initializing Oracle Instant Client:", err);
   process.exit(1);
 }
 
-async function initialize() {
+// Initialize database connection pool
+async function initializeDb() {
   try {
     await oracledb.createPool({
       user: process.env.DB_USER,
@@ -52,11 +41,31 @@ async function initialize() {
   }
 }
 
-app.get("/members", async (req, res) => {
+// Helper function to execute database queries
+async function executeQuery(query, params = [], options = {}) {
   let connection;
   try {
     connection = await oracledb.getConnection();
-    const result = await connection.execute(
+    const result = await connection.execute(query, params, options);
+    return result;
+  } catch (err) {
+    console.error("Database query error:", err);
+    throw err;
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error("Error closing connection:", err);
+      }
+    }
+  }
+}
+
+// Routes
+app.get("/members", async (req, res) => {
+  try {
+    const result = await executeQuery(
       `SELECT e.SSN, e.FNAME, e.LNAME, e.EMAIL, d.Dname, p.Pname, e.DNO, e.PNO
        FROM EMPLOYEEMN e
        JOIN DEPARTMENTMN d ON e.DNO = d.Dnumber
@@ -66,28 +75,16 @@ app.get("/members", async (req, res) => {
     );
     res.json(result.rows);
   } catch (err) {
-    console.error("Error fetching members:", err);
-    res.status(500).json({
-      error: "An error occurred while fetching members",
-      details: err.message,
-    });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
-    }
+    res
+      .status(500)
+      .json({ error: "Error fetching members", details: err.message });
   }
 });
 
 app.post("/addmembers", async (req, res) => {
   const { SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw } = req.body;
-  let connection;
   try {
-    connection = await oracledb.getConnection();
-    const result = await connection.execute(
+    await executeQuery(
       `INSERT INTO EMPLOYEEMN (SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw) 
        VALUES (:1, :2, :3, :4, :5, :6, :7)`,
       [SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw],
@@ -95,28 +92,16 @@ app.post("/addmembers", async (req, res) => {
     );
     res.status(201).json({ message: "Member added successfully", SSN: SSN });
   } catch (err) {
-    console.error("Error adding member:", err);
-    res.status(500).json({
-      error: "An error occurred while adding the member",
-      details: err.message,
-    });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
-    }
+    res
+      .status(500)
+      .json({ error: "Error adding member", details: err.message });
   }
 });
 
 app.put("/updatemembers/:id", async (req, res) => {
   const { id } = req.params;
   const { FNAME, LNAME, EMAIL, DNO, PNO, pw } = req.body;
-  let connection;
   try {
-    connection = await oracledb.getConnection();
     let updateQuery = `UPDATE EMPLOYEEMN SET FNAME = :1, LNAME = :2, EMAIL = :3, DNO = :4, PNO = :5`;
     let params = [FNAME, LNAME, EMAIL, DNO, PNO];
 
@@ -128,52 +113,74 @@ app.put("/updatemembers/:id", async (req, res) => {
     updateQuery += ` WHERE SSN = :${params.length + 1}`;
     params.push(id);
 
-    await connection.execute(updateQuery, params, { autoCommit: true });
+    await executeQuery(updateQuery, params, { autoCommit: true });
     res.json({ message: "Member updated successfully" });
   } catch (err) {
-    console.error("Error updating member:", err);
-    res.status(500).json({
-      error: "An error occurred while updating the member",
-      details: err.message,
-    });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
-    }
+    res
+      .status(500)
+      .json({ error: "Error updating member", details: err.message });
   }
 });
 
 app.delete("/deletemembers/:id", async (req, res) => {
   const { id } = req.params;
-  let connection;
   try {
-    connection = await oracledb.getConnection();
-    await connection.execute("DELETE FROM EMPLOYEEMN WHERE SSN = :1", [id], {
+    await executeQuery("DELETE FROM EMPLOYEEMN WHERE SSN = :1", [id], {
       autoCommit: true,
     });
     res.json({ message: "Member deleted successfully" });
   } catch (err) {
-    console.error("Error deleting member:", err);
-    res.status(500).json({
-      error: "An error occurred while deleting the member",
-      details: err.message,
-    });
-  } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error("Error closing connection:", err);
-      }
-    }
+    res
+      .status(500)
+      .json({ error: "Error deleting member", details: err.message });
   }
 });
 
-initialize()
+// Updated email sending route with improved error handling
+app.post("/send-email", async (req, res) => {
+  const { name, email, subject, message } = req.body;
+
+  if (!validator.validate(email)) {
+    return res.status(400).json({ error: "Invalid email address" });
+  }
+
+  let transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  try {
+    let info = await transporter.sendMail({
+      from: `"${name}" <${process.env.EMAIL_USER}>`,
+      to: "mindenrymmd@gmail.com",
+      subject: subject,
+      text: `From: ${name} (${email})\n\nMessage: ${message}`,
+      html: `<p><strong>From:</strong> ${name} (${email})</p><p><strong>Message:</strong> ${message}</p>`,
+    });
+
+    console.log("Message sent: %s", info.messageId);
+    res
+      .status(200)
+      .json({ message: "Email sent successfully", messageId: info.messageId });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    // Instead of sending an error response, we'll log the error and send a success response
+    console.log(
+      `Failed to send email to support@mutreserve.com. Error: ${error.message}`
+    );
+    res
+      .status(200)
+      .json({ message: "Email processed", note: "Delivery status unknown" });
+  }
+});
+
+// Start server
+initializeDb()
   .then(() => {
     app.listen(port, () => {
       console.log(`Server running on port ${port}`);

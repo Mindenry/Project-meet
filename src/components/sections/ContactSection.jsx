@@ -25,9 +25,26 @@ const ContactSection = () => {
     },
   });
 
-  const onSubmit = (data) => {
-    console.log("Contact form submitted:", data);
-    toast.success("ข้อความถูกส่งเรียบร้อยแล้ว!");
+  const onSubmit = async (data) => {
+    try {
+      const response = await fetch("http://localhost:8080/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        toast.success("ข้อความถูกส่งเรียบร้อยแล้ว!");
+        form.reset();
+      } else {
+        throw new Error("Failed to send email");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("เกิดข้อผิดพลาดในการส่งข้อความ กรุณาลองอีกครั้ง");
+    }
   };
 
   return (
@@ -39,11 +56,11 @@ const ContactSection = () => {
         <div className="mb-8 space-y-2">
           <div className="flex items-center">
             <Mail className="mr-3 text-blue-500" />
-            <span>support@mutreserve.com</span>
+            <span>mindenrymmd@gmail.com</span>
           </div>
           <div className="flex items-center">
             <Phone className="mr-3 text-blue-500" />
-            <span>+66 2 123 4567</span>
+            <span>+66 9-999-9999</span>
           </div>
         </div>
         <Form {...form}>
