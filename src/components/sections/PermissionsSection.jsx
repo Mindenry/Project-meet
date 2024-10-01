@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -12,6 +12,12 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import PermissionModal from "../modals/PermissionModal";
 import { usePermissions } from "../../hooks/usePermissions";
 
@@ -75,7 +81,7 @@ const PermissionsSection = () => {
         </CardTitle>
         <div className="flex items-center space-x-2">
           <Button onClick={handleAddPermission} variant="outline">
-            <Plus className="mr-2 h-4 w-4" /> เพิ่มบทบาท
+            <Plus className="mr-2 h-4 w-4" /> เพิ่มตำแหน่ง
           </Button>
           <div className="relative">
             {notifications.length > 0 && (
@@ -100,7 +106,7 @@ const PermissionsSection = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>บทบาท</TableHead>
+              <TableHead>ตำแหน่ง</TableHead>
               <TableHead>สิทธิ์การเข้าถึง</TableHead>
               <TableHead>การจัดการ</TableHead>
             </TableRow>
@@ -111,21 +117,27 @@ const PermissionsSection = () => {
                 <TableCell>{item.role}</TableCell>
                 <TableCell>{item.access.join(", ")}</TableCell>
                 <TableCell>
-                  <Button
-                    onClick={() => handleEditPermission(item)}
-                    variant="outline"
-                    size="sm"
-                    className="mr-2"
-                  >
-                    <Edit className="h-4 w-4 mr-1" /> แก้ไข
-                  </Button>
-                  <Button
-                    onClick={() => handleDeletePermission(item.role)}
-                    variant="destructive"
-                    size="sm"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" /> ลบ
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => handleEditPermission(item)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" /> แก้ไข
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeletePermission(item.role)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> ลบ
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}

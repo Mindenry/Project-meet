@@ -12,46 +12,54 @@ import {
 } from "../ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { Calendar, Clock, MapPin, AlertCircle } from "lucide-react";
+import { AlertCircle, QrCode, MoreVertical } from "lucide-react";
 import { format } from "date-fns";
 import CancelConfirmationModal from "./CancelConfirmationModal";
+import QRCodeModal from "../modals/QRCodeModal";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 const UserCancelSection = () => {
   const [bookings, setBookings] = useState([]);
   const { user } = useAuth();
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchBookings = () => {
       // In a real application, this would be an API call
       const mockBookings = [
         {
-          id: 1,
-          roomName: "ห้องประชุมใหญ่",
+          id: "BK001",
+          roomCode: "RM101",
           date: "2024-03-15",
-          time: "10:00 - 12:00",
+          startTime: "10:00",
+          endTime: "12:00",
           status: "upcoming",
-          capacity: 20,
-          location: "ชั้น 2, อาคาร A",
+          accessCode: "AC123456",
         },
         {
-          id: 2,
-          roomName: "ห้องประชุมเล็ก",
+          id: "BK002",
+          roomCode: "RM102",
           date: "2024-03-20",
-          time: "14:00 - 16:00",
+          startTime: "14:00",
+          endTime: "16:00",
           status: "completed",
-          capacity: 8,
-          location: "ชั้น 1, อาคาร B",
+          accessCode: "AC234567",
         },
         {
-          id: 3,
-          roomName: "ห้องสัมมนา",
+          id: "BK003",
+          roomCode: "RM103",
           date: "2024-04-05",
-          time: "09:00 - 17:00",
+          startTime: "09:00",
+          endTime: "17:00",
           status: "upcoming",
-          capacity: 50,
-          location: "ชั้น 3, อาคาร C",
+          accessCode: "AC345678",
         },
       ];
       setBookings(mockBookings);
@@ -62,7 +70,7 @@ const UserCancelSection = () => {
 
   const handleCancelBooking = (booking) => {
     setSelectedBooking(booking);
-    setIsModalOpen(true);
+    setIsCancelModalOpen(true);
   };
 
   const confirmCancelBooking = () => {
@@ -74,8 +82,13 @@ const UserCancelSection = () => {
       );
       setBookings(updatedBookings);
       toast.success("การจองถูกยกเลิกเรียบร้อยแล้ว");
-      setIsModalOpen(false);
+      setIsCancelModalOpen(false);
     }
+  };
+
+  const handleShowQRCode = (booking) => {
+    setSelectedBooking(booking);
+    setIsQRModalOpen(true);
   };
 
   const getStatusBadge = (status) => {
@@ -92,7 +105,7 @@ const UserCancelSection = () => {
   };
 
   return (
-    <Card className="max-w-4xl mx-auto overflow-hidden shadow-lg rounded-lg">
+    <Card className="max-w-6xl mx-auto overflow-hidden shadow-lg rounded-lg">
       <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
         <CardTitle className="text-2xl font-bold">ประวัติการจองห้อง</CardTitle>
       </CardHeader>
@@ -112,9 +125,11 @@ const UserCancelSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ห้อง</TableHead>
-                  <TableHead>วันที่และเวลา</TableHead>
-                  <TableHead>สถานที่</TableHead>
+                  <TableHead>รหัสการจอง</TableHead>
+                  <TableHead>รหัสห้อง</TableHead>
+                  <TableHead>วันที่</TableHead>
+                  <TableHead>เวลาเริ่มต้น</TableHead>
+                  <TableHead>เวลาสิ้นสุด</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>การดำเนินการ</TableHead>
                 </TableRow>
@@ -122,42 +137,38 @@ const UserCancelSection = () => {
               <TableBody>
                 {bookings.map((booking) => (
                   <TableRow key={booking.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium">
-                      {booking.roomName}
-                    </TableCell>
+                    <TableCell className="font-medium">{booking.id}</TableCell>
+                    <TableCell>{booking.roomCode}</TableCell>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-gray-500" />
-                        <span>
-                          {format(new Date(booking.date), "dd MMM yyyy")}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span>{booking.time}</span>
-                      </div>
+                      {format(new Date(booking.date), "dd MMM yyyy")}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-500" />
-                        <span>{booking.location}</span>
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        ความจุ: {booking.capacity} คน
-                      </div>
-                    </TableCell>
+                    <TableCell>{booking.startTime}</TableCell>
+                    <TableCell>{booking.endTime}</TableCell>
                     <TableCell>{getStatusBadge(booking.status)}</TableCell>
                     <TableCell>
-                      {booking.status === "upcoming" && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleCancelBooking(booking)}
-                          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-md"
-                        >
-                          ยกเลิกการจอง
-                        </Button>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {booking.status === "upcoming" && (
+                            <DropdownMenuItem
+                              onClick={() => handleCancelBooking(booking)}
+                              className="text-red-600"
+                            >
+                              ยกเลิก
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            onClick={() => handleShowQRCode(booking)}
+                          >
+                            <QrCode className="mr-2 h-4 w-4" /> QR Code
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -167,9 +178,14 @@ const UserCancelSection = () => {
         )}
       </CardContent>
       <CancelConfirmationModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
         onConfirm={confirmCancelBooking}
+        booking={selectedBooking}
+      />
+      <QRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
         booking={selectedBooking}
       />
     </Card>

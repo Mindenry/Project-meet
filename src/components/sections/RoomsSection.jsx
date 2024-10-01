@@ -264,11 +264,6 @@ const RoomsSection = () => {
                           <Edit className="mr-2 h-4 w-4" /> แก้ไข
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleAction("approve", room)}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" /> อนุมัติ
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
                           onClick={() => handleAction("delete", room)}
                         >
                           <Trash2 className="mr-2 h-4 w-4" /> ลบ
