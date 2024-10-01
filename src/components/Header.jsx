@@ -42,11 +42,7 @@ const Header = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
           className="flex items-center"
-        >
-          <Link to="/" className="text-2xl font-bold text-gray-800">
-            RoomBook
-          </Link>
-        </motion.div>
+        ></motion.div>
         <nav className="hidden md:flex items-center space-x-6">
           {userMenuItems.map((item, index) => (
             <motion.div
