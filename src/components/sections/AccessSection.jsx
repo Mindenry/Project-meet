@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, Bell } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
@@ -78,10 +78,6 @@ const AccessSection = () => {
             <Plus className="mr-2 h-4 w-4" /> เพิ่มการเข้าถึง
           </Button>
           <div className="relative">
-            <Bell
-              className="h-6 w-6 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors"
-              onClick={() => setNotifications([])}
-            />
             {notifications.length > 0 && (
               <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
                 {notifications.length}

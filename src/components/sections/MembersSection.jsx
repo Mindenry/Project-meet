@@ -1,5 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react"; // เพิ่ม useEffect
-
+import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -21,26 +20,37 @@ import {
 } from "../ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Label } from "../ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import MemberModal from "../modals/MemberModal";
+
+const API_URL = "http://localhost:8080";
 
 const fetchMembers = async () => {
-  const response = await axios.get("http://localhost:8080/members");
+  const response = await axios.get(`${API_URL}/members`);
   return response.data;
 };
+
 const fetchDepartments = async () => {
-  const response = await axios.get("http://localhost:8080/departments");
+  const response = await axios.get(`${API_URL}/departments`);
   return response.data;
 };
+
 const fetchPositions = async () => {
-  const response = await axios.get("http://localhost:8080/positions");
+  const response = await axios.get(`${API_URL}/positions`);
   return response.data;
 };
-// const fetchStatusemps = async () => {
-//   const response = await axios.get("http://localhost:8080/statusemps");
-//   return response.data;
-// };
+
+const fetchStatusEmps = async () => {
+  const response = await axios.get(`${API_URL}/statusemps`);
+  return response.data;
+};
 
 const formatID = (id) => {
   return id.toString().padStart(3, "0");
@@ -48,9 +58,6 @@ const formatID = (id) => {
 
 const MembersSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [departments, setDepartments] = useState([]); // State สำหรับเเผนก
-  const [positions, setPositions] = useState([]); // State สำหรับตำเเหน่ง
-  // const [statusemps, setStatusemps] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingMember, setEditingMember] = useState(null);
   const [formData, setFormData] = useState({
@@ -58,35 +65,11 @@ const MembersSection = () => {
     FNAME: "",
     LNAME: "",
     EMAIL: "",
+    PW: "",
     DNO: "",
     PNO: "",
-    pw: "",
+    STUEMP: "",
   });
-  useEffect(() => {
-    loadDepartments(); // ดึงข้อมูลเมื่อคอมโพเนนต์โหลด
-    loadPositions();
-  }, []);
-
-  const loadDepartments = async () => {
-    try {
-      const departmentsData = await fetchDepartments();
-      console.log("Departments data:", departmentsData); // ตรวจสอบข้อมูล
-      setDepartments(departmentsData);
-    } catch (error) {
-      console.error("Error fetching departments:", error);
-      toast.error("ไม่สามารถดึงข้อมูลแผนกได้");
-    }
-  };
-  const loadPositions = async () => {
-    try {
-      const positionsData = await fetchPositions();
-      console.log("Positions data:", positionsData); // ตรวจสอบข้อมูล
-      setPositions(positionsData);
-    } catch (error) {
-      console.error("Error fetching departments:", error);
-      toast.error("ไม่สามารถดึงข้อมูลตำแหน่งได้");
-    }
-  };
 
   const queryClient = useQueryClient();
 
@@ -99,13 +82,27 @@ const MembersSection = () => {
     queryFn: fetchMembers,
   });
 
+  const { data: departments = [] } = useQuery({
+    queryKey: ["departments"],
+    queryFn: fetchDepartments,
+  });
+
+  const { data: positions = [] } = useQuery({
+    queryKey: ["positions"],
+    queryFn: fetchPositions,
+  });
+
+  const { data: statusEmps = [] } = useQuery({
+    queryKey: ["statusEmps"],
+    queryFn: fetchStatusEmps,
+  });
+
   const sortedMembers = useMemo(() => {
     return [...members].sort((a, b) => a.SSN - b.SSN);
   }, [members]);
 
   const addMemberMutation = useMutation({
-    mutationFn: (newMember) =>
-      axios.post("http://localhost:8080/addmembers", newMember),
+    mutationFn: (newMember) => axios.post(`${API_URL}/addmembers`, newMember),
     onSuccess: () => {
       queryClient.invalidateQueries("members");
       toast.success("เพิ่มสมาชิกสำเร็จ");
@@ -113,8 +110,6 @@ const MembersSection = () => {
       resetForm();
     },
     onError: (error) => {
-      console.error("Error adding member:", error); // ตรวจสอบรายละเอียด error
-      console.log("Response from server:", error.response?.data); // ดูข้อมูลการตอบกลับจากเซิร์ฟเวอร์
       toast.error(
         "ไม่สามารถเพิ่มสมาชิกได้: " + error.response?.data?.error ||
           error.message
@@ -124,28 +119,31 @@ const MembersSection = () => {
 
   const updateMemberMutation = useMutation({
     mutationFn: (updatedMember) =>
-      axios.put(
-        `http://localhost:8080/updatemembers/${updatedMember.SSN}`,
-        updatedMember
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries("members");
+      axios.put(`${API_URL}/updatemembers/${updatedMember.SSN}`, updatedMember),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["members"], (oldData) => {
+        return oldData.map((member) =>
+          member.SSN === data.data.updatedMember.SSN
+            ? data.data.updatedMember
+            : member
+        );
+      });
       toast.success("แก้ไขข้อมูลสมาชิกสำเร็จ");
       setIsModalOpen(false);
       setEditingMember(null);
       resetForm();
     },
     onError: (error) => {
+      console.error("Error updating member:", error);
       toast.error(
-        "ไม่สามารถแก้ไขข้อมูลสมาชิกได้: " + error.response?.data?.error ||
-          error.message
+        "ไม่สามารถแก้ไขข้อมูลสมาชิกได้: " +
+          (error.response?.data?.error || error.message)
       );
     },
   });
 
   const deleteMemberMutation = useMutation({
-    mutationFn: (SSN) =>
-      axios.delete(`http://localhost:8080/deletemembers/${SSN}`),
+    mutationFn: (SSN) => axios.delete(`${API_URL}/deletemembers/${SSN}`),
     onSuccess: () => {
       queryClient.invalidateQueries("members");
       toast.success("ลบสมาชิกสำเร็จ");
@@ -157,43 +155,28 @@ const MembersSection = () => {
     },
   });
 
-  // const handleChange = (e) => {
-  //   setFormData({ ...formData, [e.target.name]: e.target.value });
-  // };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value, // ส่งเป็นค่า ID ตรงๆ โดยไม่ต้องแปลงเป็นตัวเลขเพราะเป็น string ของ ID
+      [name]: value,
     });
   };
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-  //   if (editingMember) {
-  //     updateMemberMutation.mutate(formData);
-  //   } else {
-  //     addMemberMutation.mutate(formData);
-  //   }
-  // };
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form data:", formData); // ตรวจสอบค่าที่ถูกส่งไป
     const processedData = {
       ...formData,
       SSN: Number(formData.SSN),
       DNO: Number(formData.DNO),
       PNO: Number(formData.PNO),
+      STUEMP: Number(formData.STUEMP),
     };
-    // const updatedFormData = {
-    //   ...formData,
-    //   DNO: parseInt(formData.DNO, 10),
-    //   PNO: parseInt(formData.PNO, 10),
-    // };
 
-    console.log("Processed form data:", processedData); // ตรวจสอบค่าที่ถูกแปลงแล้ว
     if (editingMember) {
+      if (!processedData.PW || processedData.PW.trim() === "") {
+        delete processedData.PW;
+      }
       updateMemberMutation.mutate(processedData);
     } else {
       addMemberMutation.mutate(processedData);
@@ -202,7 +185,7 @@ const MembersSection = () => {
 
   const handleEditClick = (member) => {
     setEditingMember(member);
-    setFormData({ ...member, pw: "" });
+    setFormData({ ...member, PW: "" });
     setIsModalOpen(true);
   };
 
@@ -212,9 +195,10 @@ const MembersSection = () => {
       FNAME: "",
       LNAME: "",
       EMAIL: "",
+      PW: "",
       DNO: "",
       PNO: "",
-      pw: "",
+      STUEMP: "",
     });
   };
 
@@ -262,6 +246,7 @@ const MembersSection = () => {
               <TableHead>Email</TableHead>
               <TableHead>แผนก</TableHead>
               <TableHead>ตำแหน่ง</TableHead>
+              <TableHead>สถานะ</TableHead>
               <TableHead>การจัดการ</TableHead>
             </TableRow>
           </TableHeader>
@@ -274,6 +259,7 @@ const MembersSection = () => {
                 <TableCell>{member.EMAIL}</TableCell>
                 <TableCell>{member.DNAME}</TableCell>
                 <TableCell>{member.PNAME}</TableCell>
+                <TableCell>{member.STATUSEMPNAME}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -301,16 +287,6 @@ const MembersSection = () => {
         </Table>
       </CardContent>
 
-      {/* เพิ่มใหม่ */}
-      <MemberModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        member={editingMember}
-        departments={departments}
-        positions={positions}
-      />
-      {/* จบ */}
-
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -318,149 +294,113 @@ const MembersSection = () => {
               {editingMember ? "แก้ไขสมาชิก" : "เพิ่มสมาชิก"}
             </DialogTitle>
           </DialogHeader>
-          {/* <form onSubmit={handleSubmit}>
-            {["SSN", "FNAME", "LNAME", "EMAIL", "DNO", "PNO", "pw"].map(
-              (key) => (
-                <div key={key} className="mb-4">
-                  <Label htmlFor={key}>
-                    {key === "SSN"
-                      ? "ID"
-                      : key === "FNAME"
-                      ? "ชื่อ"
-                      : key === "LNAME"
-                      ? "นามสกุล"
-                      : key === "EMAIL"
-                      ? "Email"
-                      : key === "DNO"
-                      ? "แผนก"
-                      : key === "PNO"
-                      ? "ตำแหน่ง"
-                      : key === "pw"
-                      ? "รหัสผ่าน"
-                      : key}
-                  </Label>
-  
+          <form onSubmit={handleSubmit}>
+            {[
+              "SSN",
+              "FNAME",
+              "LNAME",
+              "EMAIL",
+              "PW",
+              "DNO",
+              "PNO",
+              "STUEMP",
+            ].map((key) => (
+              <div key={key} className="mb-4">
+                <Label htmlFor={key}>
+                  {key === "SSN"
+                    ? "ID"
+                    : key === "FNAME"
+                    ? "ชื่อ"
+                    : key === "LNAME"
+                    ? "นามสกุล"
+                    : key === "EMAIL"
+                    ? "Email"
+                    : key === "PW"
+                    ? "รหัสผ่าน"
+                    : key === "DNO"
+                    ? "แผนก"
+                    : key === "PNO"
+                    ? "ตำแหน่ง"
+                    : key === "STUEMP"
+                    ? "สถานะ"
+                    : key}
+                </Label>
+                {key === "DNO" ? (
+                  <Select
+                    value={formData.DNO}
+                    onValueChange={(value) =>
+                      handleChange({ target: { name: "DNO", value } })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="เลือกแผนก" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem
+                          key={dept.DNUMBER}
+                          value={dept.DNUMBER.toString()}
+                        >
+                          {dept.DNAME}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : key === "PNO" ? (
+                  <Select
+                    value={formData.PNO}
+                    onValueChange={(value) =>
+                      handleChange({ target: { name: "PNO", value } })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="เลือกตำแหน่ง" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((pos) => (
+                        <SelectItem
+                          key={pos.PNUMBER}
+                          value={pos.PNUMBER.toString()}
+                        >
+                          {pos.PNAME}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : key === "STUEMP" ? (
+                  <Select
+                    value={formData.STUEMP}
+                    onValueChange={(value) =>
+                      handleChange({ target: { name: "STUEMP", value } })
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="เลือกสถานะ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusEmps.map((status) => (
+                        <SelectItem
+                          key={status.STATUSEMPID}
+                          value={status.STATUSEMPID.toString()}
+                        >
+                          {status.STATUSEMPNAME}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
                   <Input
                     id={key}
                     name={key}
                     value={formData[key]}
                     onChange={handleChange}
-                    required={key !== "pw" || !editingMember}
-                    type={key === "pw" ? "password" : "text"}
+                    required={key !== "PW" || !editingMember}
+                    type={key === "PW" ? "password" : "text"}
                     disabled={key === "SSN" && editingMember}
                   />
-                </div>
-              )
-            )}
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsModalOpen(false)}
-              >
-                ยกเลิก
-              </Button>
-              <Button type="submit">บันทึก</Button>
-            </div>
-          </form> */}
-          <form onSubmit={handleSubmit}>
-            {["SSN", "FNAME", "LNAME", "EMAIL", "DNO", "PNO", "pw"].map(
-              (key) => (
-                <div key={key} className="mb-4">
-                  <Label htmlFor={key}>
-                    {key === "SSN"
-                      ? "ID"
-                      : key === "FNAME"
-                      ? "ชื่อ"
-                      : key === "LNAME"
-                      ? "นามสกุล"
-                      : key === "EMAIL"
-                      ? "Email"
-                      : key === "DNO"
-                      ? "แผนก"
-                      : key === "PNO"
-                      ? "ตำแหน่ง"
-                      : key === "pw"
-                      ? "รหัสผ่าน"
-                      : key}
-                  </Label>
-                  {key === "DNO" ? (
-                    // <select
-                    //   id={key}
-                    //   name={key}
-                    //   value={formData[key]}
-                    //   onChange={handleChange}
-                    //   required
-                    //   disabled={key === "SSN" && editingMember}
-                    //   className="w-full p-2 border rounded"
-                    // >
-                    //   <option value="">เลือกแผนก</option>
-                    //   {departments.map((dept) => (
-                    //     <option key={dept.DNO} value={dept.DNO}>
-                    //       {dept.DNAME}
-                    //     </option>
-                    //   ))}
-                    // </select>
-                    <select
-                      id="DNO"
-                      name="DNO"
-                      value={formData.DNO}
-                      onChange={handleChange}
-                      required
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="">เลือกแผนก</option>
-                      {departments.map((dept) => (
-                        <option key={dept.Dnumber} value={dept.Dnumber}>
-                          {dept.DNAME} {/* แสดงชื่อ แต่ส่งค่าเป็น DNO */}
-                        </option>
-                      ))}
-                    </select>
-                  ) : key === "PNO" ? (
-                    // <select
-                    //   id={key}
-                    //   name={key}
-                    //   value={formData[key]}
-                    //   onChange={handleChange}
-                    //   required
-                    //   className="w-full p-2 border rounded"
-                    // >
-                    //   <option value="">เลือกตำแหน่ง</option>
-                    //   {positions.map((pos) => (
-                    //     <option key={pos.PNO} value={pos.PNO}>
-                    //       {pos.PNAME}
-                    //     </option>
-                    //   ))}
-                    // </select>
-                    <select
-                      id="PNO"
-                      name="PNO"
-                      value={formData.PNO}
-                      onChange={handleChange}
-                      required
-                      className="w-full p-2 border rounded"
-                    >
-                      <option value="">เลือกตำแหน่ง</option>
-                      {positions.map((pos) => (
-                        <option key={pos.Pnumber} value={pos.Pnumber}>
-                          {pos.PNAME} {/* แสดงชื่อ แต่ส่งค่าเป็น PNO */}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <Input
-                      id={key}
-                      name={key}
-                      value={formData[key]}
-                      onChange={handleChange}
-                      required={key !== "pw" || !editingMember}
-                      type={key === "pw" ? "password" : "text"}
-                      disabled={key === "SSN" && editingMember}
-                    />
-                  )}
-                </div>
-              )
-            )}
+                )}
+              </div>
+            ))}
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"

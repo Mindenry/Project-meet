@@ -63,6 +63,8 @@ const MemberModal = ({ isOpen, onClose, onSave, member }) => {
     onSave(formData);
   };
 
+  const positionOptions = [];
+  const departmentOptions = [];
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -124,7 +126,7 @@ const MemberModal = ({ isOpen, onClose, onSave, member }) => {
                 required
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
+            {/* <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="position" className="text-right">
                 ตำแหน่ง
               </Label>
@@ -136,8 +138,32 @@ const MemberModal = ({ isOpen, onClose, onSave, member }) => {
                 className="col-span-3"
                 required
               />
-            </div>
+            </div> */}
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="position" className="text-right">
+                ตำแหน่ง
+              </Label>
+              <Select
+                name="position"
+                value={formData.position}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, position: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกตำเเหน่ง" />
+                </SelectTrigger>
+                <SelectContent>
+                  {positionOptions.map((position) => (
+                    <SelectItem key={position} value={position.toString()}>
+                      {position}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="department" className="text-right">
                 แผนก
               </Label>
@@ -149,7 +175,31 @@ const MemberModal = ({ isOpen, onClose, onSave, member }) => {
                 className="col-span-3"
                 required
               />
+            </div> */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="department" className="text-right">
+                แผนก
+              </Label>
+              <Select
+                name="department"
+                value={formData.department}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, department: value }))
+                }
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="เลือกเเผนก" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departmentOptions.map((department) => (
+                    <SelectItem key={department} value={department.toString()}>
+                      {department}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="employeeId" className="text-right">
                 รหัสพนักงาน

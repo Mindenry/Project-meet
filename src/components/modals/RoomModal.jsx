@@ -1,4 +1,6 @@
 import React from "react";
+import axios from "axios";
+
 import {
   Dialog,
   DialogContent,
@@ -52,9 +54,26 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   onSave(formData);
+  // };
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    try {
+      if (room) {
+        // แก้ไขข้อมูลห้อง
+        await axios.put(`http://localhost:8080/room/${formData.id}`, formData);
+      } else {
+        // สร้างห้องใหม่
+        await axios.post("http://localhost:8080/room", formData);
+      }
+      onSave(formData);
+      onClose(); // ปิดโมดัล
+    } catch (error) {
+      console.error("Error saving room:", error);
+      // แจ้งเตือนผู้ใช้ว่ามีข้อผิดพลาด
+    }
   };
 
   const floorOptions = Array.from({ length: 20 }, (_, i) => i + 1);

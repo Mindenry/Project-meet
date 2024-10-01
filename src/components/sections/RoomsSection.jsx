@@ -3,15 +3,7 @@ import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import {
-  Bell,
-  Search,
-  Plus,
-  Trash2,
-  CheckCircle,
-  Edit,
-  XCircle,
-} from "lucide-react";
+import { Search, Plus, Trash2, CheckCircle, Edit, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,34 +35,36 @@ import {
 } from "../ui/dropdown-menu";
 import { Label } from "../ui/label";
 import axios from "axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const fetchRoom = async () => {
-  const response = await axios.get("http://localhost:8080/room");
+const API_URL = "http://localhost:8080";
+
+const fetchRooms = async () => {
+  const response = await axios.get(`${API_URL}/room`);
   return response.data;
 };
+
 const fetchBuildings = async () => {
-  const response = await axios.get("http://localhost:8080/buildings");
+  const response = await axios.get(`${API_URL}/buildings`);
   return response.data;
 };
+
 const fetchFloors = async () => {
-  const response = await axios.get("http://localhost:8080/floors");
+  const response = await axios.get(`${API_URL}/floors`);
   return response.data;
 };
+
 const fetchRoomtypes = async () => {
-  const response = await axios.get("http://localhost:8080/roomtypes");
+  const response = await axios.get(`${API_URL}/roomtypes`);
   return response.data;
 };
+
 const fetchStatusrooms = async () => {
-  const response = await axios.get("http://localhost:8080/statusrooms");
+  const response = await axios.get(`${API_URL}/statusrooms`);
   return response.data;
 };
 
 const RoomsSection = () => {
-  const [rooms, setRooms] = useState([]);
-  const [buildings, setBuildings] = useState([]); // State สำหรับตึก
-  const [floors, setFloors] = useState([]); // State สำหรับชั้น
-  const [roomtypes, setRoomtypes] = useState([]); // State สำหรับประเภทห้อง
-  const [statusrooms, setStatusrooms] = useState([]); // State สำหรับสถานะห้อง
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,65 +75,69 @@ const RoomsSection = () => {
     data: null,
   });
 
-  useEffect(() => {
-    loadRooms();
-    loadBuildings(); // ดึงข้อมูลตึกเมื่อคอมโพเนนต์โหลด
-    loadFloors();
-    loadRoomtypes();
-    loadStatusrooms();
-  }, []);
+  const queryClient = useQueryClient();
 
-  const loadRooms = async () => {
-    try {
-      const roomsData = await fetchRoom();
-      console.log("Rooms data:", roomsData); // ตรวจสอบข้อมูล
-      setRooms(roomsData);
-    } catch (error) {
-      console.error("Error fetching rooms:", error);
-      toast.error("ไม่สามารถดึงข้อมูลห้องประชุมได้");
-    }
-  };
+  const { data: rooms = [], isLoading: isLoadingRooms } = useQuery({
+    queryKey: ["rooms"],
+    queryFn: fetchRooms,
+  });
 
-  const loadBuildings = async () => {
-    try {
-      const buildingsData = await fetchBuildings();
-      console.log("Buildings data:", buildingsData); // ตรวจสอบข้อมูลตึก
-      setBuildings(buildingsData);
-    } catch (error) {
-      console.error("Error fetching buildings:", error);
-      toast.error("ไม่สามารถดึงข้อมูลตึกได้");
-    }
-  };
-  const loadFloors = async () => {
-    try {
-      const floorsData = await fetchFloors();
-      console.log("Floors data:", floorsData); // ตรวจสอบข้อมูลชั้น
-      setFloors(floorsData);
-    } catch (error) {
-      console.error("Error fetching floors:", error);
-      toast.error("ไม่สามารถดึงข้อมูลชั้นได้");
-    }
-  };
-  const loadRoomtypes = async () => {
-    try {
-      const roomtypesData = await fetchRoomtypes();
-      console.log("Roomtype data:", roomtypesData); // ตรวจสอบข้อมูลชั้น
-      setRoomtypes(roomtypesData);
-    } catch (error) {
-      console.error("Error fetching roomtypes:", error);
-      toast.error("ไม่สามารถดึงข้อมูลประเภทได้");
-    }
-  };
-  const loadStatusrooms = async () => {
-    try {
-      const statusroomsData = await fetchStatusrooms();
-      console.log("Statusrooms data:", statusroomsData); // ตรวจสอบข้อมูลชั้น
-      setStatusrooms(statusroomsData);
-    } catch (error) {
-      console.error("Error fetching statusrooms:", error);
-      toast.error("ไม่สามารถดึงข้อมูลสถานะได้");
-    }
-  };
+  const { data: buildings = [] } = useQuery({
+    queryKey: ["buildings"],
+    queryFn: fetchBuildings,
+  });
+
+  const { data: floors = [] } = useQuery({
+    queryKey: ["floors"],
+    queryFn: fetchFloors,
+  });
+
+  const { data: roomtypes = [] } = useQuery({
+    queryKey: ["roomtypes"],
+    queryFn: fetchRoomtypes,
+  });
+
+  const { data: statusrooms = [] } = useQuery({
+    queryKey: ["statusrooms"],
+    queryFn: fetchStatusrooms,
+  });
+
+  const addRoomMutation = useMutation({
+    mutationFn: (newRoom) => axios.post(`${API_URL}/addroom`, newRoom),
+    onSuccess: () => {
+      queryClient.invalidateQueries("rooms");
+      toast.success("เพิ่มห้องประชุมสำเร็จ");
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      toast.error("ไม่สามารถเพิ่มห้องประชุมได้: " + error.message);
+    },
+  });
+
+  const updateRoomMutation = useMutation({
+    mutationFn: (updatedRoom) =>
+      axios.put(`${API_URL}/updateroom/${updatedRoom.CFRNUMBER}`, updatedRoom),
+    onSuccess: () => {
+      queryClient.invalidateQueries("rooms");
+      toast.success("อัปเดตข้อมูลห้องประชุมสำเร็จ");
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      toast.error("ไม่สามารถอัปเดตข้อมูลห้องประชุมได้: " + error.message);
+    },
+  });
+
+  const deleteRoomMutation = useMutation({
+    mutationFn: (CFRNUMBER) =>
+      axios.delete(`${API_URL}/deleteroom/${CFRNUMBER}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries("rooms");
+      toast.success("ลบห้องประชุมสำเร็จ");
+    },
+    onError: (error) => {
+      toast.error("ไม่สามารถลบห้องประชุมได้: " + error.message);
+    },
+  });
 
   const handleAction = (action, room = null) => {
     switch (action) {
@@ -161,95 +159,26 @@ const RoomsSection = () => {
     }
   };
 
-  const updateRooms = (updatedRooms, message) => {
-    setRooms(updatedRooms);
-    localStorage.setItem("rooms", JSON.stringify(updatedRooms));
-    addNotification(message);
-    toast.success(message);
-  };
-
-  // const handleSaveRoom = async (roomData) => {
-  //   try {
-  //     if (editingRoom) {
-  //       // Update existing room
-  //       await axios.put(`http://localhost:8080/room/${roomData.id}`, roomData);
-  //       const updatedRooms = rooms.map((room) =>
-  //         room.id === roomData.id ? roomData : room
-  //       );
-  //       updateRooms(updatedRooms, "อัปเดตข้อมูลห้องประชุมเรียบร้อยแล้ว");
-  //     } else {
-  //       // Add new room
-  //       const response = await axios.post(
-  //         "http://localhost:8080/room",
-  //         roomData
-  //       );
-  //       const newRoom = response.data; // Assuming the backend returns the new room
-  //       updateRooms([...rooms, newRoom], "เพิ่มห้องประชุมเรียบร้อยแล้ว");
-  //     }
-  //     setIsModalOpen(false);
-  //   } catch (error) {
-  //     console.error("Error saving room:", error);
-  //     toast.error("ไม่สามารถบันทึกข้อมูลห้องประชุมได้");
-  //   }
-  // };
-
-  const handleSaveRoom = async (roomData) => {
-    try {
-      if (editingRoom) {
-        // Update existing room
-        await axios.put(`http://localhost:8080/room/${roomData.id}`, roomData);
-        const updatedRooms = rooms.map((room) =>
-          room.id === roomData.id ? { ...room, ...roomData } : room
-        );
-        updateRooms(updatedRooms, "อัปเดตข้อมูลห้องประชุมเรียบร้อยแล้ว");
-      } else {
-        // Add new room
-        const response = await axios.post(
-          "http://localhost:8080/room",
-          roomData
-        );
-        const newRoom = response.data; // Assuming the backend returns the new room
-        updateRooms([...rooms, newRoom], "เพิ่มห้องประชุมเรียบร้อยแล้ว");
-      }
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error saving room:", error);
-      toast.error("ไม่สามารถบันทึกข้อมูลห้องประชุมได้");
+  const handleSaveRoom = (roomData) => {
+    if (editingRoom) {
+      updateRoomMutation.mutate(roomData);
+    } else {
+      addRoomMutation.mutate(roomData);
     }
   };
 
   const handleDeleteRoom = () => {
-    const updatedRooms = rooms.filter(
-      (room) => room.id !== dialogState.data.id
-    );
-    updateRooms(
-      updatedRooms,
-      `ลบห้องประชุม ${dialogState.data.name} เรียบร้อยแล้ว`
-    );
+    deleteRoomMutation.mutate(dialogState.data.CFRNUMBER);
     setDialogState({ type: null, isOpen: false, data: null });
   };
 
   const handleApproveRoom = (approveData) => {
-    const updatedRooms = rooms.map((room) =>
-      room.id === approveData.id
-        ? { ...room, ...approveData, status: "อนุมัติ" }
-        : room
-    );
-    updateRooms(
-      updatedRooms,
-      `อนุมัติห้องประชุม ${approveData.name} เรียบร้อยแล้ว`
-    );
+    console.log("Approving room:", approveData);
     setDialogState({ type: null, isOpen: false, data: null });
   };
 
   const handleCloseRoom = () => {
-    const updatedRooms = rooms.map((room) =>
-      room.id === dialogState.data.id ? { ...room, status: "ปิดใช้งาน" } : room
-    );
-    updateRooms(
-      updatedRooms,
-      `ปิดการใช้งานห้องประชุม ${dialogState.data.name} เรียบร้อยแล้ว`
-    );
+    console.log("Closing room:", dialogState.data);
     setDialogState({ type: null, isOpen: false, data: null });
   };
 
@@ -264,9 +193,11 @@ const RoomsSection = () => {
 
   const filteredRooms = rooms.filter((room) =>
     Object.values(room).some((value) =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  if (isLoadingRooms) return <div>กำลังโหลด...</div>;
 
   return (
     <Card className="w-full">
@@ -276,10 +207,6 @@ const RoomsSection = () => {
           <Button onClick={() => handleAction("add")} variant="outline">
             <Plus className="mr-2 h-4 w-4" /> เพิ่มห้องประชุม
           </Button>
-          <Bell
-            className="h-6 w-6 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors"
-            onClick={() => setNotifications([])}
-          />
           {notifications.length > 0 && (
             <span className="absolute top-4 right-4 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
               {notifications.length}
@@ -320,7 +247,7 @@ const RoomsSection = () => {
                   <TableCell>{room.BDNAME}</TableCell>
                   <TableCell>{room.FLNAME}</TableCell>
                   <TableCell>{room.RTNAME}</TableCell>
-                  <TableCell>{room.status || "ว่าง"}</TableCell>
+                  <TableCell>{room.STATUSROOMNAME}</TableCell>
                   <TableCell>{room.CAPACITY}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -365,12 +292,11 @@ const RoomsSection = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveRoom}
         room={editingRoom}
-        buildings={buildings} // ส่ง buildings ไปที่ RoomModal
-        floors={floors} // ส่ง floorsไปที่ RoomModal
-        roomtypes={roomtypes} // ส่ง roomtypesไปที่ RoomModal
+        buildings={buildings}
+        floors={floors}
+        roomtypes={roomtypes}
         statusrooms={statusrooms}
       />
-
       <ConfirmDialog
         isOpen={dialogState.type === "delete"}
         onClose={() =>
@@ -378,7 +304,7 @@ const RoomsSection = () => {
         }
         onConfirm={handleDeleteRoom}
         title="ยืนยันการลบห้องประชุม"
-        message={`คุณต้องการลบห้องประชุม ${dialogState.data?.name} ใช่หรือไม่?`}
+        message={`คุณต้องการลบห้องประชุม ${dialogState.data?.CFRNAME} ใช่หรือไม่?`}
       />
       <ApproveDialog
         isOpen={dialogState.type === "approve"}
@@ -395,7 +321,7 @@ const RoomsSection = () => {
         }
         onConfirm={handleCloseRoom}
         title="ยืนยันการปิดใช้งานห้องประชุม"
-        message={`คุณต้องการปิดใช้งานห้องประชุม ${dialogState.data?.name} ใช่หรือไม่?`}
+        message={`คุณต้องการปิดใช้งานห้องประชุม ${dialogState.data?.CFRNAME} ใช่หรือไม่?`}
       />
     </Card>
   );
@@ -412,13 +338,13 @@ const RoomModal = ({
   statusrooms,
 }) => {
   const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    floor: "",
-    building: "",
-    capacity: "",
-    type: "",
-    status: "",
+    CFRNUMBER: "",
+    CFRNAME: "",
+    BDNUM: "",
+    FLNUM: "",
+    RTNUM: "",
+    STUROOM: "",
+    CAPACITY: "",
   });
 
   useEffect(() => {
@@ -426,13 +352,13 @@ const RoomModal = ({
       setFormData(room);
     } else {
       setFormData({
-        id: "",
-        name: "",
-        floor: "",
-        building: "",
-        capacity: "",
-        type: "",
-        status: "",
+        CFRNUMBER: "",
+        CFRNAME: "",
+        BDNUM: "",
+        FLNUM: "",
+        RTNUM: "",
+        STUROOM: "",
+        CAPACITY: "",
       });
     }
   }, [room]);
@@ -456,30 +382,45 @@ const RoomModal = ({
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor="CFRNUMBER" className="text-right">
+              ID
+            </Label>
+            <Input
+              id="CFRNUMBER"
+              value={formData.CFRNUMBER}
+              onChange={(e) => handleChange("CFRNUMBER", e.target.value)}
+              className="col-span-3"
+              disabled={!!room} // ไม่อนุญาตให้แก้ไข ID เมื่อกำลังแก้ไขห้องที่มีอยู่แล้ว
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="CFRNAME" className="text-right">
               ชื่อห้อง
             </Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              id="CFRNAME"
+              value={formData.CFRNAME}
+              onChange={(e) => handleChange("CFRNAME", e.target.value)}
               className="col-span-3"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="building" className="text-right">
+            <Label htmlFor="BDNUM" className="text-right">
               ตึก
             </Label>
             <Select
-              value={formData.building}
-              onValueChange={(value) => handleChange("building", value)}
+              value={formData.BDNUM}
+              onValueChange={(value) => handleChange("BDNUM", value)}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="เลือกตึก" />
               </SelectTrigger>
               <SelectContent>
                 {buildings.map((building) => (
-                  <SelectItem key={building.BDID} value={building.BDID}>
+                  <SelectItem
+                    key={building.BDNUMBER}
+                    value={building.BDNUMBER.toString()}
+                  >
                     {building.BDNAME}
                   </SelectItem>
                 ))}
@@ -487,19 +428,22 @@ const RoomModal = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="floor" className="text-right">
+            <Label htmlFor="FLNUM" className="text-right">
               ชั้น
             </Label>
             <Select
-              value={formData.floor}
-              onValueChange={(value) => handleChange("floor", value)}
+              value={formData.FLNUM}
+              onValueChange={(value) => handleChange("FLNUM", value)}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="เลือกชั้น" />
               </SelectTrigger>
               <SelectContent>
                 {floors.map((floor) => (
-                  <SelectItem key={floor.id} value={floor.id}>
+                  <SelectItem
+                    key={floor.FLNUMBER}
+                    value={floor.FLNUMBER.toString()}
+                  >
                     {floor.FLNAME}
                   </SelectItem>
                 ))}
@@ -507,31 +451,34 @@ const RoomModal = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="capacity" className="text-right">
+            <Label htmlFor="CAPACITY" className="text-right">
               จำนวน
             </Label>
             <Input
-              id="capacity"
+              id="CAPACITY"
               type="number"
-              value={formData.capacity}
-              onChange={(e) => handleChange("capacity", e.target.value)}
+              value={formData.CAPACITY}
+              onChange={(e) => handleChange("CAPACITY", e.target.value)}
               className="col-span-3"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="type" className="text-right">
+            <Label htmlFor="RTNUM" className="text-right">
               ประเภท
             </Label>
             <Select
-              value={formData.type}
-              onValueChange={(value) => handleChange("type", value)}
+              value={formData.RTNUM}
+              onValueChange={(value) => handleChange("RTNUM", value)}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="เลือกประเภท" />
               </SelectTrigger>
               <SelectContent>
                 {roomtypes.map((roomtype) => (
-                  <SelectItem key={roomtype.id} value={roomtype.id}>
+                  <SelectItem
+                    key={roomtype.RTNUMBER}
+                    value={roomtype.RTNUMBER.toString()}
+                  >
                     {roomtype.RTNAME}
                   </SelectItem>
                 ))}
@@ -539,19 +486,22 @@ const RoomModal = ({
             </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="status" className="text-right">
+            <Label htmlFor="STUROOM" className="text-right">
               สถานะ
             </Label>
             <Select
-              value={formData.status}
-              onValueChange={(value) => handleChange("status", value)}
+              value={formData.STUROOM}
+              onValueChange={(value) => handleChange("STUROOM", value)}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="เลือกสถานะ" />
               </SelectTrigger>
               <SelectContent>
                 {statusrooms.map((statusroom) => (
-                  <SelectItem key={statusroom.id} value={statusroom.id}>
+                  <SelectItem
+                    key={statusroom.STATUSROOMID}
+                    value={statusroom.STATUSROOMID.toString()}
+                  >
                     {statusroom.STATUSROOMNAME}
                   </SelectItem>
                 ))}
@@ -593,19 +543,19 @@ const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message }) => (
 
 const ApproveDialog = ({ isOpen, onClose, onApprove, room }) => {
   const [formData, setFormData] = useState({
-    id: "",
-    name: "",
-    floor: "",
-    building: "",
-    capacity: "",
-    type: "VIP",
-    status: "อนุมัติ",
+    CFRNUMBER: "",
+    CFRNAME: "",
+    BDNUM: "",
+    FLNUM: "",
+    RTNUM: "",
+    STUROOM: "",
+    CAPACITY: "",
     reason: "",
   });
 
   useEffect(() => {
     if (room) {
-      setFormData({ ...room, status: "อนุมัติ", reason: "" });
+      setFormData({ ...room, reason: "" });
     }
   }, [room]);
 
@@ -626,35 +576,45 @@ const ApproveDialog = ({ isOpen, onClose, onApprove, room }) => {
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
+            <Label htmlFor="CFRNUMBER" className="text-right">
+              ID
+            </Label>
+            <Input
+              id="CFRNUMBER"
+              value={formData.CFRNUMBER}
+              className="col-span-3"
+              readOnly
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="CFRNAME" className="text-right">
               ชื่อห้อง
             </Label>
             <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
+              id="CFRNAME"
+              value={formData.CFRNAME}
               className="col-span-3"
               readOnly
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="building" className="text-right">
+            <Label htmlFor="BDNAME" className="text-right">
               ตึก
             </Label>
             <Input
-              id="building"
-              value={formData.building}
+              id="BDNAME"
+              value={formData.BDNAME}
               className="col-span-3"
               readOnly
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="floor" className="text-right">
+            <Label htmlFor="FLNAME" className="text-right">
               ชั้น
             </Label>
             <Input
-              id="floor"
-              value={formData.floor}
+              id="FLNAME"
+              value={formData.FLNAME}
               className="col-span-3"
               readOnly
             />
