@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react"; // เพิ่ม useEffect
+
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -22,11 +23,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Label } from "../ui/label";
 import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import MemberModal from "../modals/MemberModal";
 
 const fetchMembers = async () => {
   const response = await axios.get("http://localhost:8080/members");
   return response.data;
 };
+const fetchDepartments = async () => {
+  const response = await axios.get("http://localhost:8080/departments");
+  return response.data;
+};
+const fetchPositions = async () => {
+  const response = await axios.get("http://localhost:8080/positions");
+  return response.data;
+};
+// const fetchStatusemps = async () => {
+//   const response = await axios.get("http://localhost:8080/statusemps");
+//   return response.data;
+// };
 
 const formatID = (id) => {
   return id.toString().padStart(3, "0");
@@ -34,6 +48,9 @@ const formatID = (id) => {
 
 const MembersSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [departments, setDepartments] = useState([]); // State สำหรับเเผนก
+  const [positions, setPositions] = useState([]); // State สำหรับตำเเหน่ง
+  // const [statusemps, setStatusemps] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingMember, setEditingMember] = useState(null);
   const [formData, setFormData] = useState({
@@ -45,6 +62,31 @@ const MembersSection = () => {
     PNO: "",
     pw: "",
   });
+  useEffect(() => {
+    loadDepartments(); // ดึงข้อมูลเมื่อคอมโพเนนต์โหลด
+    loadPositions();
+  }, []);
+
+  const loadDepartments = async () => {
+    try {
+      const departmentsData = await fetchDepartments();
+      console.log("Departments data:", departmentsData); // ตรวจสอบข้อมูล
+      setDepartments(departmentsData);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      toast.error("ไม่สามารถดึงข้อมูลแผนกได้");
+    }
+  };
+  const loadPositions = async () => {
+    try {
+      const positionsData = await fetchPositions();
+      console.log("Positions data:", positionsData); // ตรวจสอบข้อมูล
+      setPositions(positionsData);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      toast.error("ไม่สามารถดึงข้อมูลตำแหน่งได้");
+    }
+  };
 
   const queryClient = useQueryClient();
 
@@ -71,6 +113,8 @@ const MembersSection = () => {
       resetForm();
     },
     onError: (error) => {
+      console.error("Error adding member:", error); // ตรวจสอบรายละเอียด error
+      console.log("Response from server:", error.response?.data); // ดูข้อมูลการตอบกลับจากเซิร์ฟเวอร์
       toast.error(
         "ไม่สามารถเพิ่มสมาชิกได้: " + error.response?.data?.error ||
           error.message
@@ -113,16 +157,46 @@ const MembersSection = () => {
     },
   });
 
+  // const handleChange = (e) => {
+  //   setFormData({ ...formData, [e.target.name]: e.target.value });
+  // };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value, // ส่งเป็นค่า ID ตรงๆ โดยไม่ต้องแปลงเป็นตัวเลขเพราะเป็น string ของ ID
+    });
   };
 
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   if (editingMember) {
+  //     updateMemberMutation.mutate(formData);
+  //   } else {
+  //     addMemberMutation.mutate(formData);
+  //   }
+  // };
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("Form data:", formData); // ตรวจสอบค่าที่ถูกส่งไป
+    const processedData = {
+      ...formData,
+      SSN: Number(formData.SSN),
+      DNO: Number(formData.DNO),
+      PNO: Number(formData.PNO),
+    };
+    // const updatedFormData = {
+    //   ...formData,
+    //   DNO: parseInt(formData.DNO, 10),
+    //   PNO: parseInt(formData.PNO, 10),
+    // };
+
+    console.log("Processed form data:", processedData); // ตรวจสอบค่าที่ถูกแปลงแล้ว
     if (editingMember) {
-      updateMemberMutation.mutate(formData);
+      updateMemberMutation.mutate(processedData);
     } else {
-      addMemberMutation.mutate(formData);
+      addMemberMutation.mutate(processedData);
     }
   };
 
@@ -226,6 +300,17 @@ const MembersSection = () => {
           </TableBody>
         </Table>
       </CardContent>
+
+      {/* เพิ่มใหม่ */}
+      <MemberModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        member={editingMember}
+        departments={departments}
+        positions={positions}
+      />
+      {/* จบ */}
+
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -233,6 +318,51 @@ const MembersSection = () => {
               {editingMember ? "แก้ไขสมาชิก" : "เพิ่มสมาชิก"}
             </DialogTitle>
           </DialogHeader>
+          {/* <form onSubmit={handleSubmit}>
+            {["SSN", "FNAME", "LNAME", "EMAIL", "DNO", "PNO", "pw"].map(
+              (key) => (
+                <div key={key} className="mb-4">
+                  <Label htmlFor={key}>
+                    {key === "SSN"
+                      ? "ID"
+                      : key === "FNAME"
+                      ? "ชื่อ"
+                      : key === "LNAME"
+                      ? "นามสกุล"
+                      : key === "EMAIL"
+                      ? "Email"
+                      : key === "DNO"
+                      ? "แผนก"
+                      : key === "PNO"
+                      ? "ตำแหน่ง"
+                      : key === "pw"
+                      ? "รหัสผ่าน"
+                      : key}
+                  </Label>
+  
+                  <Input
+                    id={key}
+                    name={key}
+                    value={formData[key]}
+                    onChange={handleChange}
+                    required={key !== "pw" || !editingMember}
+                    type={key === "pw" ? "password" : "text"}
+                    disabled={key === "SSN" && editingMember}
+                  />
+                </div>
+              )
+            )}
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsModalOpen(false)}
+              >
+                ยกเลิก
+              </Button>
+              <Button type="submit">บันทึก</Button>
+            </div>
+          </form> */}
           <form onSubmit={handleSubmit}>
             {["SSN", "FNAME", "LNAME", "EMAIL", "DNO", "PNO", "pw"].map(
               (key) => (
@@ -254,15 +384,80 @@ const MembersSection = () => {
                       ? "รหัสผ่าน"
                       : key}
                   </Label>
-                  <Input
-                    id={key}
-                    name={key}
-                    value={formData[key]}
-                    onChange={handleChange}
-                    required={key !== "pw" || !editingMember}
-                    type={key === "pw" ? "password" : "text"}
-                    disabled={key === "SSN" && editingMember}
-                  />
+                  {key === "DNO" ? (
+                    // <select
+                    //   id={key}
+                    //   name={key}
+                    //   value={formData[key]}
+                    //   onChange={handleChange}
+                    //   required
+                    //   disabled={key === "SSN" && editingMember}
+                    //   className="w-full p-2 border rounded"
+                    // >
+                    //   <option value="">เลือกแผนก</option>
+                    //   {departments.map((dept) => (
+                    //     <option key={dept.DNO} value={dept.DNO}>
+                    //       {dept.DNAME}
+                    //     </option>
+                    //   ))}
+                    // </select>
+                    <select
+                      id="DNO"
+                      name="DNO"
+                      value={formData.DNO}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-2 border rounded"
+                    >
+                      <option value="">เลือกแผนก</option>
+                      {departments.map((dept) => (
+                        <option key={dept.Dnumber} value={dept.Dnumber}>
+                          {dept.DNAME} {/* แสดงชื่อ แต่ส่งค่าเป็น DNO */}
+                        </option>
+                      ))}
+                    </select>
+                  ) : key === "PNO" ? (
+                    // <select
+                    //   id={key}
+                    //   name={key}
+                    //   value={formData[key]}
+                    //   onChange={handleChange}
+                    //   required
+                    //   className="w-full p-2 border rounded"
+                    // >
+                    //   <option value="">เลือกตำแหน่ง</option>
+                    //   {positions.map((pos) => (
+                    //     <option key={pos.PNO} value={pos.PNO}>
+                    //       {pos.PNAME}
+                    //     </option>
+                    //   ))}
+                    // </select>
+                    <select
+                      id="PNO"
+                      name="PNO"
+                      value={formData.PNO}
+                      onChange={handleChange}
+                      required
+                      className="w-full p-2 border rounded"
+                    >
+                      <option value="">เลือกตำแหน่ง</option>
+                      {positions.map((pos) => (
+                        <option key={pos.Pnumber} value={pos.Pnumber}>
+                          {pos.PNAME} {/* แสดงชื่อ แต่ส่งค่าเป็น PNO */}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Input
+                      id={key}
+                      name={key}
+                      value={formData[key]}
+                      onChange={handleChange}
+                      required={key !== "pw" || !editingMember}
+                      type={key === "pw" ? "password" : "text"}
+                      disabled={key === "SSN" && editingMember}
+                    />
+                  )}
                 </div>
               )
             )}

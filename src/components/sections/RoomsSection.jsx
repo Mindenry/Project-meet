@@ -42,9 +42,35 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import { Label } from "../ui/label";
+import axios from "axios";
+
+const fetchRoom = async () => {
+  const response = await axios.get("http://localhost:8080/room");
+  return response.data;
+};
+const fetchBuildings = async () => {
+  const response = await axios.get("http://localhost:8080/buildings");
+  return response.data;
+};
+const fetchFloors = async () => {
+  const response = await axios.get("http://localhost:8080/floors");
+  return response.data;
+};
+const fetchRoomtypes = async () => {
+  const response = await axios.get("http://localhost:8080/roomtypes");
+  return response.data;
+};
+const fetchStatusrooms = async () => {
+  const response = await axios.get("http://localhost:8080/statusrooms");
+  return response.data;
+};
 
 const RoomsSection = () => {
   const [rooms, setRooms] = useState([]);
+  const [buildings, setBuildings] = useState([]); // State สำหรับตึก
+  const [floors, setFloors] = useState([]); // State สำหรับชั้น
+  const [roomtypes, setRoomtypes] = useState([]); // State สำหรับประเภทห้อง
+  const [statusrooms, setStatusrooms] = useState([]); // State สำหรับสถานะห้อง
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -57,11 +83,62 @@ const RoomsSection = () => {
 
   useEffect(() => {
     loadRooms();
+    loadBuildings(); // ดึงข้อมูลตึกเมื่อคอมโพเนนต์โหลด
+    loadFloors();
+    loadRoomtypes();
+    loadStatusrooms();
   }, []);
 
-  const loadRooms = () => {
-    const storedRooms = JSON.parse(localStorage.getItem("rooms")) || [];
-    setRooms(storedRooms);
+  const loadRooms = async () => {
+    try {
+      const roomsData = await fetchRoom();
+      console.log("Rooms data:", roomsData); // ตรวจสอบข้อมูล
+      setRooms(roomsData);
+    } catch (error) {
+      console.error("Error fetching rooms:", error);
+      toast.error("ไม่สามารถดึงข้อมูลห้องประชุมได้");
+    }
+  };
+
+  const loadBuildings = async () => {
+    try {
+      const buildingsData = await fetchBuildings();
+      console.log("Buildings data:", buildingsData); // ตรวจสอบข้อมูลตึก
+      setBuildings(buildingsData);
+    } catch (error) {
+      console.error("Error fetching buildings:", error);
+      toast.error("ไม่สามารถดึงข้อมูลตึกได้");
+    }
+  };
+  const loadFloors = async () => {
+    try {
+      const floorsData = await fetchFloors();
+      console.log("Floors data:", floorsData); // ตรวจสอบข้อมูลชั้น
+      setFloors(floorsData);
+    } catch (error) {
+      console.error("Error fetching floors:", error);
+      toast.error("ไม่สามารถดึงข้อมูลชั้นได้");
+    }
+  };
+  const loadRoomtypes = async () => {
+    try {
+      const roomtypesData = await fetchRoomtypes();
+      console.log("Roomtype data:", roomtypesData); // ตรวจสอบข้อมูลชั้น
+      setRoomtypes(roomtypesData);
+    } catch (error) {
+      console.error("Error fetching roomtypes:", error);
+      toast.error("ไม่สามารถดึงข้อมูลประเภทได้");
+    }
+  };
+  const loadStatusrooms = async () => {
+    try {
+      const statusroomsData = await fetchStatusrooms();
+      console.log("Statusrooms data:", statusroomsData); // ตรวจสอบข้อมูลชั้น
+      setStatusrooms(statusroomsData);
+    } catch (error) {
+      console.error("Error fetching statusrooms:", error);
+      toast.error("ไม่สามารถดึงข้อมูลสถานะได้");
+    }
   };
 
   const handleAction = (action, room = null) => {
@@ -91,17 +168,54 @@ const RoomsSection = () => {
     toast.success(message);
   };
 
-  const handleSaveRoom = (roomData) => {
-    const updatedRooms = editingRoom
-      ? rooms.map((room) => (room.id === roomData.id ? roomData : room))
-      : [...rooms, { ...roomData, id: Date.now().toString() }];
-    updateRooms(
-      updatedRooms,
-      editingRoom
-        ? "อัปเดตข้อมูลห้องประชุมเรียบร้อยแล้ว"
-        : "เพิ่มห้องประชุมเรียบร้อยแล้ว"
-    );
-    setIsModalOpen(false);
+  // const handleSaveRoom = async (roomData) => {
+  //   try {
+  //     if (editingRoom) {
+  //       // Update existing room
+  //       await axios.put(`http://localhost:8080/room/${roomData.id}`, roomData);
+  //       const updatedRooms = rooms.map((room) =>
+  //         room.id === roomData.id ? roomData : room
+  //       );
+  //       updateRooms(updatedRooms, "อัปเดตข้อมูลห้องประชุมเรียบร้อยแล้ว");
+  //     } else {
+  //       // Add new room
+  //       const response = await axios.post(
+  //         "http://localhost:8080/room",
+  //         roomData
+  //       );
+  //       const newRoom = response.data; // Assuming the backend returns the new room
+  //       updateRooms([...rooms, newRoom], "เพิ่มห้องประชุมเรียบร้อยแล้ว");
+  //     }
+  //     setIsModalOpen(false);
+  //   } catch (error) {
+  //     console.error("Error saving room:", error);
+  //     toast.error("ไม่สามารถบันทึกข้อมูลห้องประชุมได้");
+  //   }
+  // };
+
+  const handleSaveRoom = async (roomData) => {
+    try {
+      if (editingRoom) {
+        // Update existing room
+        await axios.put(`http://localhost:8080/room/${roomData.id}`, roomData);
+        const updatedRooms = rooms.map((room) =>
+          room.id === roomData.id ? { ...room, ...roomData } : room
+        );
+        updateRooms(updatedRooms, "อัปเดตข้อมูลห้องประชุมเรียบร้อยแล้ว");
+      } else {
+        // Add new room
+        const response = await axios.post(
+          "http://localhost:8080/room",
+          roomData
+        );
+        const newRoom = response.data; // Assuming the backend returns the new room
+        updateRooms([...rooms, newRoom], "เพิ่มห้องประชุมเรียบร้อยแล้ว");
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error saving room:", error);
+      toast.error("ไม่สามารถบันทึกข้อมูลห้องประชุมได้");
+    }
   };
 
   const handleDeleteRoom = () => {
@@ -194,18 +308,20 @@ const RoomsSection = () => {
                 <TableHead>ชั้น</TableHead>
                 <TableHead>ประเภท</TableHead>
                 <TableHead>สถานะ</TableHead>
+                <TableHead>ความจุ</TableHead>
                 <TableHead>การจัดการ</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRooms.map((room) => (
-                <TableRow key={room.id}>
-                  <TableCell>{room.id}</TableCell>
-                  <TableCell>{room.name}</TableCell>
-                  <TableCell>{room.building}</TableCell>
-                  <TableCell>{room.floor}</TableCell>
-                  <TableCell>{room.type}</TableCell>
-                  <TableCell>{room.status}</TableCell>
+                <TableRow key={room.CFRNUMBER}>
+                  <TableCell>{room.CFRNUMBER}</TableCell>
+                  <TableCell>{room.CFRNAME}</TableCell>
+                  <TableCell>{room.BDNAME}</TableCell>
+                  <TableCell>{room.FLNAME}</TableCell>
+                  <TableCell>{room.RTNAME}</TableCell>
+                  <TableCell>{room.status || "ว่าง"}</TableCell>
+                  <TableCell>{room.CAPACITY}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -249,7 +365,12 @@ const RoomsSection = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveRoom}
         room={editingRoom}
+        buildings={buildings} // ส่ง buildings ไปที่ RoomModal
+        floors={floors} // ส่ง floorsไปที่ RoomModal
+        roomtypes={roomtypes} // ส่ง roomtypesไปที่ RoomModal
+        statusrooms={statusrooms}
       />
+
       <ConfirmDialog
         isOpen={dialogState.type === "delete"}
         onClose={() =>
@@ -280,15 +401,24 @@ const RoomsSection = () => {
   );
 };
 
-const RoomModal = ({ isOpen, onClose, onSave, room }) => {
+const RoomModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  room,
+  buildings,
+  floors,
+  roomtypes,
+  statusrooms,
+}) => {
   const [formData, setFormData] = useState({
     id: "",
     name: "",
     floor: "",
     building: "",
     capacity: "",
-    type: "ธรรมดา",
-    status: "ว่าง",
+    type: "",
+    status: "",
   });
 
   useEffect(() => {
@@ -301,8 +431,8 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
         floor: "",
         building: "",
         capacity: "",
-        type: "ธรรมดา",
-        status: "ว่าง",
+        type: "",
+        status: "",
       });
     }
   }, [room]);
@@ -348,9 +478,9 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 <SelectValue placeholder="เลือกตึก" />
               </SelectTrigger>
               <SelectContent>
-                {["อาคาร A", "อาคาร B", "อาคาร C"].map((building) => (
-                  <SelectItem key={building} value={building}>
-                    {building}
+                {buildings.map((building) => (
+                  <SelectItem key={building.BDID} value={building.BDID}>
+                    {building.BDNAME}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -368,9 +498,9 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 <SelectValue placeholder="เลือกชั้น" />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5].map((floor) => (
-                  <SelectItem key={floor} value={floor.toString()}>
-                    {floor}
+                {floors.map((floor) => (
+                  <SelectItem key={floor.id} value={floor.id}>
+                    {floor.FLNAME}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -400,9 +530,9 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 <SelectValue placeholder="เลือกประเภท" />
               </SelectTrigger>
               <SelectContent>
-                {["ธรรมดา", "VIP"].map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
+                {roomtypes.map((roomtype) => (
+                  <SelectItem key={roomtype.id} value={roomtype.id}>
+                    {roomtype.RTNAME}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -420,9 +550,9 @@ const RoomModal = ({ isOpen, onClose, onSave, room }) => {
                 <SelectValue placeholder="เลือกสถานะ" />
               </SelectTrigger>
               <SelectContent>
-                {["ว่าง", "ไม่ว่าง", "ปิดปรับปรุง"].map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
+                {statusrooms.map((statusroom) => (
+                  <SelectItem key={statusroom.id} value={statusroom.id}>
+                    {statusroom.STATUSROOMNAME}
                   </SelectItem>
                 ))}
               </SelectContent>

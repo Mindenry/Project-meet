@@ -63,6 +63,8 @@ async function executeQuery(query, params = [], options = {}) {
 }
 
 // Routes
+
+//member
 app.get("/members", async (req, res) => {
   try {
     const result = await executeQuery(
@@ -80,12 +82,54 @@ app.get("/members", async (req, res) => {
       .json({ error: "Error fetching members", details: err.message });
   }
 });
+app.get("/departments", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT DNUMBER, DNAME FROM DEPARTMENTMN`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching departments", details: err.message });
+  }
+});
+app.get("/positions", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT PNUMBER, PNAME FROM POSITIONMN`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching positions", details: err.message });
+  }
+});
+app.get("/statusemps", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT STATUSEMPID, STATUSEMPNAME FROM STATUSEMP`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching statusemps", details: err.message });
+  }
+});
 
 app.post("/addmembers", async (req, res) => {
   const { SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw } = req.body;
   try {
     await executeQuery(
-      `INSERT INTO EMPLOYEEMN (SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw) 
+      `INSERT INTO EMPLOYEEMN (SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw)
        VALUES (:1, :2, :3, :4, :5, :6, :7)`,
       [SSN, FNAME, LNAME, EMAIL, DNO, PNO, pw],
       { autoCommit: true }
@@ -178,6 +222,134 @@ app.post("/send-email", async (req, res) => {
       .json({ message: "Email processed", note: "Delivery status unknown" });
   }
 });
+
+//room
+app.get("/room", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT c.CFRNUMBER, c.CFRNAME,b.BDNAME,f.FLNAME,r.RTNAME,s.STATUSROOMNAME,c.CAPACITY,c.BDNUM,c.FLNUM,c.RTNUM,c.STUROOM
+       FROM CONFERENCEROOM c
+       JOIN ROOMTYPE r ON c.RTNUM = r.Rtnumber
+       JOIN FLOOR f ON c.FLNUM = f.Flnumber
+       JOIN BUILDING b ON c.BDNUM = b.Bdnumber
+       JOIN STATUSROOM s ON c.STUROOM = s.STATUSROOMID`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching room", details: err.message });
+  }
+});
+// Route to get all buildings
+app.get("/buildings", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT BDNUMBER, BDNAME FROM BUILDING`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching buildings", details: err.message });
+  }
+});
+app.get("/floors", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT FLNUMBER, FLNAME FROM FLOOR`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching floors", details: err.message });
+  }
+});
+app.get("/roomtypes", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT RTNUMBER, RTNAME FROM ROOMTYPE`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching roomtypes", details: err.message });
+  }
+});
+app.get("/statusrooms", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT statusroomid, statusroomname FROM STATUSROOM`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching statusrooms", details: err.message });
+  }
+});
+app.post("/addroom", async (req, res) => {
+  const { CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY } =
+    req.body;
+  try {
+    await executeQuery(
+      `INSERT INTO CONFERENCEROOM (CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY)
+       VALUES (:1, :2, :3, :4, :5, :6, :7)`,
+      [CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY],
+      { autoCommit: true }
+    );
+    res.status(201).json({ message: "Room added successfully", CFRNUMBER });
+  } catch (err) {
+    res.status(500).json({ error: "Error adding room", details: err.message });
+  }
+});
+app.put("/updateroom/:id", async (req, res) => {
+  const { id } = req.params;
+  const { CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY } = req.body;
+  try {
+    let updateQuery = `UPDATE CONFERENCEROOM SET CFRNAME = :1, BDNUM = :2, FLNUM = :3, RTNUM = :4, STUROOM = :5, CAPACITY = :6`;
+    let params = [CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY];
+
+    updateQuery += ` WHERE CFRNUMBER = :${params.length + 1}`;
+    params.push(id);
+
+    await executeQuery(updateQuery, params, { autoCommit: true });
+    res.json({ message: "Room updated successfully" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error updating room", details: err.message });
+  }
+});
+app.delete("/deleteroom/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    await executeQuery(
+      "DELETE FROM CONFERENCEROOM WHERE CFRNUMBER = :1",
+      [id],
+      { autoCommit: true }
+    );
+    res.json({ message: "Room deleted successfully" });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error deleting room", details: err.message });
+  }
+});
+
+//endroom
 
 // Start server
 initializeDb()
