@@ -196,19 +196,19 @@ app.put("/updatemembers/:id", async (req, res) => {
   }
 });
 
-app.delete("/deletemembers/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await executeQuery("DELETE FROM EMPLOYEE WHERE SSN = :1", [id], {
-      autoCommit: true,
-    });
-    res.json({ message: "Member deleted successfully" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Error deleting member", details: err.message });
-  }
-});
+// app.delete("/deletemembers/:id", async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     await executeQuery("DELETE FROM EMPLOYEE WHERE SSN = :1", [id], {
+//       autoCommit: true,
+//     });
+//     res.json({ message: "Member deleted successfully" });
+//   } catch (err) {
+//     res
+//       .status(500)
+//       .json({ error: "Error deleting member", details: err.message });
+//   }
+// });
 
 // Rooms
 app.get("/room", async (req, res) => {

@@ -142,18 +142,6 @@ const MembersSection = () => {
     },
   });
 
-  const deleteMemberMutation = useMutation({
-    mutationFn: (SSN) => axios.delete(`${API_URL}/deletemembers/${SSN}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries("members");
-      toast.success("ลบสมาชิกสำเร็จ");
-    },
-    onError: (error) => {
-      toast.error(
-        "ไม่สามารถลบสมาชิกได้: " + error.response?.data?.error || error.message
-      );
-    },
-  });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -272,12 +260,6 @@ const MembersSection = () => {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleEditClick(member)}>
                         <Edit className="mr-2 h-4 w-4" /> แก้ไข
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => deleteMemberMutation.mutate(member.SSN)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" /> ลบ
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
