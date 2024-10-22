@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Search, Edit, Trash2, MoreVertical } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -11,26 +11,81 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../ui/table";
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import PermissionModal from "../modals/PermissionModal";
-import { usePermissions } from "../../hooks/usePermissions";
 import axios from "axios";
 
 const API_URL = "http://localhost:8080";
 
 const PermissionsSection = () => {
-  const { permissions, addPermission, updatePermission, deletePermission } =
-    usePermissions();
+  const [permissions, setPermissions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPermission, setEditingPermission] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [notifications, setNotifications] = useState([]);
+  const [availablePositions, setAvailablePositions] = useState([]);
+  const [availableAccessOptions, setAvailableAccessOptions] = useState([]);
+
+  useEffect(() => {
+    fetchPermissions();
+    fetchPositions();
+    fetchAccessOptions();
+  }, []);
+
+  const fetchPermissions = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/accessmenus`);
+      const groupedPermissions = groupPermissionsByRole(response.data);
+      setPermissions(groupedPermissions);
+    } catch (error) {
+      console.error("Error fetching permissions:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลสิทธิ์");
+    }
+  };
+
+  const fetchPositions = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/positions`);
+      setAvailablePositions(response.data);
+    } catch (error) {
+      console.error("Error fetching positions:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลตำแหน่ง");
+    }
+  };
+
+  const fetchAccessOptions = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/menus`);
+      setAvailableAccessOptions(response.data);
+    } catch (error) {
+      console.error("Error fetching menus:", error);
+      toast.error("เกิดข้อผิดพลาดในการดึงข้อมูลเมนู");
+    }
+  };
+
+  const groupPermissionsByRole = (permissions) => {
+    return permissions.reduce((acc, current) => {
+      const { NO, PNUMBER, PNAME, MNUMBER, MNAME } = current;
+      const existingRole = acc.find((item) => item.PNUMBER === PNUMBER);
+
+      if (existingRole) {
+        existingRole.access.push({ MNUMBER, MNAME });
+      } else {
+        acc.push({
+          NO,
+          PNUMBER,
+          PNAME,
+          access: [{ MNUMBER, MNAME }],
+        });
+      }
+      return acc;
+    }, []);
+  };
 
   const handleAddPermission = () => {
     setEditingPermission(null);
@@ -42,38 +97,58 @@ const PermissionsSection = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeletePermission = (role) => {
-    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบสิทธิ์นี้?")) {
-      deletePermission(role);
-      addNotification("ลบสิทธิ์เรียบร้อยแล้ว");
+  const handleDeletePermission = async (permission) => {
+    try {
+      await axios.delete(`${API_URL}/accessmenus/${permission.NO}`);
+      toast.success("ลบสิทธิ์สำเร็จ");
+      fetchPermissions();
+    } catch (error) {
+      console.error("Error deleting permission:", error);
+      toast.error("เกิดข้อผิดพลาดในการลบสิทธิ์");
     }
   };
 
-  const handleSavePermission = (permissionData) => {
-    if (editingPermission) {
-      updatePermission(permissionData);
-      addNotification("อัปเดตสิทธิ์เรียบร้อยแล้ว");
-    } else {
-      addPermission(permissionData);
-      addNotification("เพิ่มสิทธิ์เรียบร้อยแล้ว");
-    }
-    setIsModalOpen(false);
-  };
+  const handleSavePermission = async (permissionData) => {
+    try {
+      const { PNUMBER, access } = permissionData;
 
-  const addNotification = (message) => {
-    const newNotification = {
-      id: Date.now(),
-      message,
-      timestamp: new Date().toLocaleString(),
-    };
-    setNotifications((prev) => [newNotification, ...prev]);
-    toast.success(message);
+      if (editingPermission) {
+        // Update existing permissions
+        const existingAccess = editingPermission.access.map(a => a.MNUMBER);
+        const toAdd = access.filter(a => !existingAccess.includes(a));
+        const toRemove = existingAccess.filter(a => !access.includes(a));
+
+        for (const MNUM of toAdd) {
+          await axios.post(`${API_URL}/accessmenus`, { PNUM: PNUMBER, MNUM });
+        }
+
+        for (const MNUM of toRemove) {
+          const accessToRemove = editingPermission.access.find(a => a.MNUMBER === MNUM);
+          if (accessToRemove) {
+            await axios.delete(`${API_URL}/accessmenus/${accessToRemove.NO}`);
+          }
+        }
+
+        toast.success("อัปเดตสิทธิ์เรียบร้อยแล้ว");
+      } else {
+        // Add new permissions
+        for (const MNUM of access) {
+          await axios.post(`${API_URL}/accessmenus`, { PNUM: PNUMBER, MNUM });
+        }
+        toast.success("เพิ่มสิทธิ์เรียบร้อยแล้ว");
+      }
+
+      setIsModalOpen(false);
+      fetchPermissions();
+    } catch (error) {
+      console.error("Error saving permission:", error);
+      toast.error("เกิดข้อผิดพลาดในการบันทึกสิทธิ์");
+    }
   };
 
   const filteredPermissions = permissions.filter((item) =>
-    Object.values(item).some((value) =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    item.PNAME.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.access.some(a => a.MNAME.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -86,13 +161,6 @@ const PermissionsSection = () => {
           <Button onClick={handleAddPermission} variant="outline">
             <Plus className="mr-2 h-4 w-4" /> เพิ่มตำแหน่ง
           </Button>
-          <div className="relative">
-            {notifications.length > 0 && (
-              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                {notifications.length}
-              </span>
-            )}
-          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -116,9 +184,9 @@ const PermissionsSection = () => {
           </TableHeader>
           <TableBody>
             {filteredPermissions.map((item) => (
-              <TableRow key={item.role}>
-                <TableCell>{item.role}</TableCell>
-                <TableCell>{item.access.join(", ")}</TableCell>
+              <TableRow key={item.PNUMBER}>
+                <TableCell>{item.PNAME}</TableCell>
+                <TableCell>{item.access.map(a => a.MNAME).join(", ")}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -134,7 +202,7 @@ const PermissionsSection = () => {
                         <Edit className="mr-2 h-4 w-4" /> แก้ไข
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDeletePermission(item.role)}
+                        onClick={() => handleDeletePermission(item)}
                         className="text-red-600"
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> ลบ
@@ -147,11 +215,14 @@ const PermissionsSection = () => {
           </TableBody>
         </Table>
       </CardContent>
+
       <PermissionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSavePermission}
         permission={editingPermission}
+        positions={availablePositions}
+        accessOptions={availableAccessOptions}
       />
     </Card>
   );

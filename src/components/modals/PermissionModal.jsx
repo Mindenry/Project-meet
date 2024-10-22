@@ -1,53 +1,49 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
-import { Checkbox } from "../ui/checkbox";
-import { Label } from "../ui/label";
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
-const PermissionModal = ({ isOpen, onClose, onSave, permission }) => {
-  const [role, setRole] = React.useState(permission?.role || "");
-  const [access, setAccess] = React.useState(permission?.access || []);
+const PermissionModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  permission,
+  positions,
+  accessOptions,
+}) => {
+  const [selectedPosition, setSelectedPosition] = useState("");
+  const [selectedAccess, setSelectedAccess] = useState([]);
+
+  useEffect(() => {
+    if (permission) {
+      setSelectedPosition(permission.PNUMBER);
+      setSelectedAccess(permission.access.map((a) => a.MNUMBER));
+    } else {
+      setSelectedPosition("");
+      setSelectedAccess([]);
+    }
+  }, [permission]);
 
   const handleSave = () => {
-    onSave({ role, access });
-    onClose();
+    onSave({
+      PNUMBER: selectedPosition,
+      access: selectedAccess,
+    });
   };
-
-  const toggleAccess = (item) => {
-    setAccess((prev) =>
-      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
-    );
-  };
-
-  const positions = [
-    "ผู้ดูแลระบบ",
-    "ผู้จัดการ",
-    "พนักงาน",
-    "ลูกค้า",
-    "ผู้ใช้ทั่วไป",
-  ];
-
-  const accessOptions = [
-    "จองห้อง",
-    "ยกเลิกการจอง",
-    "ดูรายงาน",
-    "จัดการผู้ใช้",
-    "จัดการห้อง",
-  ];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -59,38 +55,46 @@ const PermissionModal = ({ isOpen, onClose, onSave, permission }) => {
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="role" className="text-right">
+            <Label htmlFor="position" className="text-right">
               ตำแหน่ง
             </Label>
-            <Select onValueChange={setRole} defaultValue={role}>
+            <Select
+              onValueChange={setSelectedPosition}
+              value={selectedPosition}
+            >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="เลือกตำแหน่ง" />
               </SelectTrigger>
               <SelectContent>
                 {positions.map((pos) => (
-                  <SelectItem key={pos} value={pos}>
-                    {pos}
+                  <SelectItem key={pos.PNUMBER} value={pos.PNUMBER}>
+                    {pos.PNAME}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">สิทธิ์การเข้าถึง</Label>
             <div className="col-span-3 space-y-2">
-              {accessOptions.map((item) => (
-                <div key={item} className="flex items-center space-x-2">
+              {accessOptions.map((option) => (
+                <div key={option.MNUMBER} className="flex items-center space-x-2">
                   <Checkbox
-                    id={item}
-                    checked={access.includes(item)}
-                    onCheckedChange={() => toggleAccess(item)}
+                    id={`access-${option.MNUMBER}`}
+                    checked={selectedAccess.includes(option.MNUMBER)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedAccess([...selectedAccess, option.MNUMBER]);
+                      } else {
+                        setSelectedAccess(
+                          selectedAccess.filter((id) => id !== option.MNUMBER)
+                        );
+                      }
+                    }}
                   />
-                  <label
-                    htmlFor={item}
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    {item}
-                  </label>
+                  <Label htmlFor={`access-${option.MNUMBER}`}>
+                    {option.MNAME}
+                  </Label>
                 </div>
               ))}
             </div>
