@@ -91,7 +91,7 @@ const BookingHistorySection = () => {
 
   const handleShowQRCode = (booking) => {
     setSelectedBooking(booking);
-    setIsQRModalOpen(true); // เปิดโมดัล QR Code
+    setIsQRModalOpen(true); 
   };
 
   const getStatusBadge = (history) => {
