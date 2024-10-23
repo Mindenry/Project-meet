@@ -54,15 +54,8 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     {
       name: "blacklist",
       icon: Ban,
-      label: "บัญชีดำ",
+      label: "ล็อคสมาชิก",
       path: "/dashboard/blacklist",
-      adminOnly: true,
-    },
-    {
-      name: "cancel",
-      icon: XCircle,
-      label: "ยกเลิก",
-      path: "/dashboard/cancel",
       adminOnly: true,
     },
     {

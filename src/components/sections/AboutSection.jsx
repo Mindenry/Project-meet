@@ -15,10 +15,9 @@ import {
 const AboutSection = () => {
   const features = [
     { name: "จัดการสมาชิก", icon: Users },
-    { name: "จัดการห้องพัก", icon: Home },
+    { name: "จัดการห้องประชุม", icon: Home },
     { name: "จัดการการเข้าถึง", icon: Shield },
-    { name: "จัดการบัญชีดำ", icon: UserX },
-    { name: "จัดการการยกเลิก", icon: XCircle },
+    { name: "จัดการล็อคสมาชิก", icon: UserX },
     { name: "รายงานและสถิติ", icon: BarChart3 },
     { name: "จัดการสิทธิ์การใช้งาน", icon: Lock },
   ];
@@ -45,7 +44,7 @@ const AboutSection = () => {
                   1.2.1 Beta Early Access
                 </Badge>
               </div>
-              <Progress value={70} className="h-2 bg-blue-100" />
+              <Progress value={85} className="h-2 bg-blue-100" />
             </div>
             <p className="text-sm text-gray-500">
               ผู้พัฒนา: ทีมพัฒนาซอฟต์แวร์ Team Avenger EIEI
