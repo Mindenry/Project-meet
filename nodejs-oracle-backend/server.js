@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const validator = require("email-validator");
-const bcrypt = require("bcrypt");
 const QRCode = require("qrcode");
 dotenv.config();
 const app = express();
@@ -179,20 +178,7 @@ app.put("/updatemembers/:id", async (req, res) => {
       .json({ error: "Error updating member", details: err.message });
   }
 });
-// Delete Member Route
-app.delete("/deletemembers/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    await executeQuery("DELETE FROM EMPLOYEE WHERE SSN = :1", [id], {
-      autoCommit: true,
-    });
-    res.json({ message: "Member deleted successfully" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ error: "Error deleting member", details: err.message });
-  }
-});
+
 // Room Routes
 app.get("/room", async (req, res) => {
   try {
