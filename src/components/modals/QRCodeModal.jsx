@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,8 @@ import { Download, Share2, Calendar, Clock, MapPin } from "lucide-react";
 import { toast } from "sonner";
 
 const QRCodeModal = ({ isOpen, onClose, booking }) => {
+  const qrRef = useRef(null);
+
   if (!booking) return null;
 
   const qrContent = `
@@ -24,36 +26,103 @@ const QRCodeModal = ({ isOpen, onClose, booking }) => {
   `.trim();
 
   const handleDownload = () => {
-    const canvas = document.querySelector("canvas");
-    if (canvas) {
-      const url = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.download = `booking-${booking.RESERVERID}.png`;
-      link.href = url;
-      link.click();
-      toast.success("ดาวน์โหลด QR Code สำเร็จ");
+    const svgElement = qrRef.current?.querySelector('svg');
+    if (!svgElement) {
+      toast.error("ไม่สามารถดาวน์โหลด QR Code ได้");
+      return;
     }
+
+    // Create canvas
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const data = (new XMLSerializer()).serializeToString(svgElement);
+    const DOMURL = window.URL || window.webkitURL || window;
+
+    const img = new Image();
+    const svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
+    const url = DOMURL.createObjectURL(svgBlob);
+
+    img.onload = function () {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      DOMURL.revokeObjectURL(url);
+
+      const imgURI = canvas
+        .toDataURL('image/png')
+        .replace('image/png', 'image/octet-stream');
+
+      const link = document.createElement('a');
+      link.download = `booking-${booking.RESERVERID}.png`;
+      link.href = imgURI;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success("ดาวน์โหลด QR Code สำเร็จ");
+    };
+
+    img.src = url;
   };
 
   const handleShare = async () => {
     try {
-      const canvas = document.querySelector("canvas");
-      if (canvas) {
-        const blob = await new Promise(resolve => canvas.toBlob(resolve));
-        if (blob) {
-          const file = new File([blob], "qr-code.png", { type: "image/png" });
-          if (navigator.share) {
-            await navigator.share({
-              files: [file],
-              title: 'QR Code การจองห้องประชุม',
-              text: qrContent
-            });
-            toast.success("แชร์ QR Code สำเร็จ");
-          } else {
-            toast.error("บราวเซอร์ของคุณไม่รองรับการแชร์");
-          }
-        }
+      const svgElement = qrRef.current?.querySelector('svg');
+      if (!svgElement) {
+        throw new Error("ไม่พบ QR Code");
       }
+
+      // Convert SVG to canvas
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const data = (new XMLSerializer()).serializeToString(svgElement);
+      const DOMURL = window.URL || window.webkitURL || window;
+
+      const img = new Image();
+      const svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'});
+      const url = DOMURL.createObjectURL(svgBlob);
+
+      await new Promise((resolve, reject) => {
+        img.onload = function () {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          DOMURL.revokeObjectURL(url);
+          resolve();
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          throw new Error("ไม่สามารถสร้างไฟล์ได้");
+        }
+
+        const file = new File([blob], `booking-${booking.RESERVERID}.png`, {
+          type: "image/png",
+        });
+
+        if (navigator.share) {
+          await navigator.share({
+            files: [file],
+            title: "QR Code การจองห้องประชุม",
+            text: qrContent,
+          });
+          toast.success("แชร์ QR Code สำเร็จ");
+        } else {
+          // Fallback for browsers that don't support sharing
+          const shareUrl = URL.createObjectURL(blob);
+          const tempLink = document.createElement("a");
+          tempLink.href = shareUrl;
+          tempLink.download = `booking-${booking.RESERVERID}.png`;
+          document.body.appendChild(tempLink);
+          tempLink.click();
+          document.body.removeChild(tempLink);
+          URL.revokeObjectURL(shareUrl);
+          toast.success("ดาวน์โหลด QR Code แทนการแชร์สำเร็จ");
+        }
+      }, 'image/png', 1.0);
+
     } catch (error) {
       console.error("Error sharing:", error);
       toast.error("ไม่สามารถแชร์ QR Code ได้");
@@ -71,7 +140,10 @@ const QRCodeModal = ({ isOpen, onClose, booking }) => {
         <div className="flex flex-col md:flex-row gap-6 p-6">
           {/* QR Code Section */}
           <div className="flex-1 flex flex-col items-center space-y-4">
-            <div className="p-4 bg-white rounded-2xl shadow-lg border-2 border-gray-100 hover:shadow-xl transition-shadow duration-300 relative group">
+            <div 
+              ref={qrRef}
+              className="p-4 bg-white rounded-2xl shadow-lg border-2 border-gray-100 hover:shadow-xl transition-shadow duration-300 relative group"
+            >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <QRCodeSVG
                 value={qrContent}
