@@ -42,7 +42,7 @@ const AboutSection = () => {
                   variant="secondary"
                   className="bg-blue-100 text-blue-800"
                 >
-                  1.1.1 Beta
+                  1.2.1 Beta Early Access
                 </Badge>
               </div>
               <Progress value={70} className="h-2 bg-blue-100" />
