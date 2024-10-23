@@ -6,15 +6,11 @@ const nodemailer = require("nodemailer");
 const validator = require("email-validator");
 const bcrypt = require("bcrypt");
 const QRCode = require("qrcode");
-
 dotenv.config();
-
 const app = express();
 const port = process.env.PORT || 8080;
-
 app.use(cors());
 app.use(express.json());
-
 // Initialize Oracle client
 try {
   oracledb.initOracleClient({ libDir: process.env.ORACLE_CLIENT_PATH });
@@ -23,7 +19,6 @@ try {
   console.error("Error initializing Oracle Instant Client:", err);
   process.exit(1);
 }
-
 // Initialize database connection pool
 async function initializeDb() {
   try {
@@ -42,7 +37,6 @@ async function initializeDb() {
     process.exit(1);
   }
 }
-
 // Helper function to execute database queries
 async function executeQuery(query, params = [], options = {}) {
   let connection;
@@ -63,7 +57,6 @@ async function executeQuery(query, params = [], options = {}) {
     }
   }
 }
-
 // Members Routes
 app.get("/members", async (req, res) => {
   try {
@@ -83,7 +76,6 @@ app.get("/members", async (req, res) => {
       .json({ error: "Error fetching members", details: err.message });
   }
 });
-
 // Department Routes
 app.get("/departments", async (req, res) => {
   try {
@@ -99,7 +91,6 @@ app.get("/departments", async (req, res) => {
       .json({ error: "Error fetching departments", details: err.message });
   }
 });
-
 // Position Routes
 app.get("/positions", async (req, res) => {
   try {
@@ -115,7 +106,6 @@ app.get("/positions", async (req, res) => {
       .json({ error: "Error fetching positions", details: err.message });
   }
 });
-
 // Status Employee Routes
 app.get("/statusemps", async (req, res) => {
   try {
@@ -131,16 +121,14 @@ app.get("/statusemps", async (req, res) => {
       .json({ error: "Error fetching statusemps", details: err.message });
   }
 });
-
 // Add Member Route
 app.post("/addmembers", async (req, res) => {
   const { SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, PW } = req.body;
   try {
-    const hashedPassword = await bcrypt.hash(PW, 10);
     await executeQuery(
       `INSERT INTO EMPLOYEE (SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, PW)
        VALUES (:1, :2, :3, :4, :5, :6, :7, :8)`,
-      [SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, hashedPassword],
+      [SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, PW], // Store password directly
       { autoCommit: true }
     );
     res.status(201).json({ message: "Member added successfully", SSN: SSN });
@@ -150,7 +138,6 @@ app.post("/addmembers", async (req, res) => {
       .json({ error: "Error adding member", details: err.message });
   }
 });
-
 // Update Member Route
 app.put("/updatemembers/:id", async (req, res) => {
   const { id } = req.params;
@@ -158,19 +145,15 @@ app.put("/updatemembers/:id", async (req, res) => {
   try {
     let updateQuery = `UPDATE EMPLOYEE SET FNAME = :1, LNAME = :2, EMAIL = :3, DNO = :4, PNO = :5, STUEMP = :6`;
     let params = [FNAME, LNAME, EMAIL, DNO, PNO, STUEMP];
-
     if (PW && PW.trim() !== "") {
       updateQuery += `, PW = :7`;
       params.push(PW); // Store password directly
     }
-
     updateQuery += ` WHERE SSN = :${params.length + 1}`;
     params.push(id);
-
     const result = await executeQuery(updateQuery, params, {
       autoCommit: true,
     });
-
     if (result.rowsAffected && result.rowsAffected > 0) {
       const updatedMember = await executeQuery(
         `SELECT e.SSN, e.FNAME, e.LNAME, e.EMAIL, d.Dname, p.Pname, s.STATUSEMPNAME, e.DNO, e.PNO, e.STUEMP
@@ -182,7 +165,6 @@ app.put("/updatemembers/:id", async (req, res) => {
         [id],
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
-
       res.json({
         message: "Member updated successfully",
         updatedMember: updatedMember.rows[0],
@@ -197,7 +179,6 @@ app.put("/updatemembers/:id", async (req, res) => {
       .json({ error: "Error updating member", details: err.message });
   }
 });
-
 // Delete Member Route
 app.delete("/deletemembers/:id", async (req, res) => {
   const { id } = req.params;
@@ -212,7 +193,6 @@ app.delete("/deletemembers/:id", async (req, res) => {
       .json({ error: "Error deleting member", details: err.message });
   }
 });
-
 // Room Routes
 app.get("/room", async (req, res) => {
   try {
@@ -233,7 +213,6 @@ app.get("/room", async (req, res) => {
       .json({ error: "Error fetching rooms", details: err.message });
   }
 });
-
 // Building Routes
 app.get("/buildings", async (req, res) => {
   try {
@@ -249,14 +228,12 @@ app.get("/buildings", async (req, res) => {
       .json({ error: "Error fetching buildings", details: err.message });
   }
 });
-
 // Floor Routes
 app.get("/floors", async (req, res) => {
   const { buildingId } = req.query;
   try {
     let query = `SELECT FLNUMBER, FLNAME FROM FLOOR`;
     let params = [];
-
     if (buildingId) {
       query = `SELECT DISTINCT f.FLNUMBER, f.FLNAME
                FROM FLOOR f
@@ -265,7 +242,6 @@ app.get("/floors", async (req, res) => {
                ORDER BY f.FLNUMBER`;
       params = [buildingId];
     }
-
     const result = await executeQuery(query, params, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
@@ -276,7 +252,6 @@ app.get("/floors", async (req, res) => {
       .json({ error: "Error fetching floors", details: err.message });
   }
 });
-
 // Room Type Routes
 app.get("/roomtypes", async (req, res) => {
   try {
@@ -292,7 +267,6 @@ app.get("/roomtypes", async (req, res) => {
       .json({ error: "Error fetching roomtypes", details: err.message });
   }
 });
-
 // Status Room Routes
 app.get("/statusrooms", async (req, res) => {
   try {
@@ -308,7 +282,6 @@ app.get("/statusrooms", async (req, res) => {
       .json({ error: "Error fetching statusrooms", details: err.message });
   }
 });
-
 // Add Room Route
 app.post("/addroom", async (req, res) => {
   const { CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY } =
@@ -325,7 +298,6 @@ app.post("/addroom", async (req, res) => {
     res.status(500).json({ error: "Error adding room", details: err.message });
   }
 });
-
 // Update Room Route
 app.put("/updateroom/:id", async (req, res) => {
   const { id } = req.params;
@@ -344,7 +316,6 @@ app.put("/updateroom/:id", async (req, res) => {
       .json({ error: "Error updating room", details: err.message });
   }
 });
-
 // Delete Room Route
 app.delete("/deleteroom/:id", async (req, res) => {
   const { id } = req.params;
@@ -361,7 +332,6 @@ app.delete("/deleteroom/:id", async (req, res) => {
       .json({ error: "Error deleting room", details: err.message });
   }
 });
-
 // Booking Routes
 app.get("/user-bookings/:ssn", async (req, res) => {
   const { ssn } = req.params;
@@ -382,7 +352,6 @@ app.get("/user-bookings/:ssn", async (req, res) => {
       .json({ error: "Error fetching user bookings", details: err.message });
   }
 });
-
 // Book Room Route
 app.post("/book-room", async (req, res) => {
   const { date, startTime, endTime, room, essn } = req.body;
@@ -391,9 +360,9 @@ app.post("/book-room", async (req, res) => {
     const result = await executeQuery(
       `INSERT INTO RESERVE (RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, STUBOOKING, ESSN, QR)
        VALUES (RESERVERID_SEQ.NEXTVAL, TO_DATE(:1, 'YYYY-MM-DD'), 
-               TO_TIMESTAMP(:2, 'YYYY-MM-DD HH24:MI:SS'), 
-               TO_TIMESTAMP(:3, 'YYYY-MM-DD HH24:MI:SS'), 
-               :4, 1, :5, :6)
+                TO_TIMESTAMP(:2, 'YYYY-MM-DD HH24:MI:SS'), 
+                TO_TIMESTAMP(:3, 'YYYY-MM-DD HH24:MI:SS'), 
+                :4, 1, :5, :6)
        RETURNING RESERVERID INTO :reserverId`,
       [
         date,
@@ -406,16 +375,13 @@ app.post("/book-room", async (req, res) => {
       ],
       { autoCommit: true }
     );
-
     const reserverId = result.outBinds[0][0];
-
     const bookingResult = await executeQuery(
       `SELECT RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, STUBOOKING, ESSN, QR
        FROM RESERVE WHERE RESERVERID = :1`,
       [reserverId],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-
     res.status(201).json(bookingResult.rows[0]);
   } catch (err) {
     console.error("Error creating booking:", err);
@@ -424,7 +390,6 @@ app.post("/book-room", async (req, res) => {
       .json({ error: "Error creating booking", details: err.message });
   }
 });
-
 // Cancel Booking Route
 app.post("/cancel-booking", async (req, res) => {
   const { reserverId, essn } = req.body;
@@ -434,26 +399,22 @@ app.post("/cancel-booking", async (req, res) => {
       [reserverId, essn],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-
     if (checkResult.rows.length === 0) {
       return res
         .status(404)
         .json({ error: "Booking not found or not authorized" });
     }
-
     await executeQuery(
       `UPDATE RESERVE SET STUBOOKING = 3 WHERE RESERVERID = :1`,
       [reserverId],
       { autoCommit: true }
     );
-
     await executeQuery(
       `INSERT INTO CANCLEROOM (REASON, RESID, EMPID)
        VALUES ('User cancelled', :1, :2)`,
       [reserverId, essn],
       { autoCommit: true }
     );
-
     res.json({ message: "Booking cancelled successfully" });
   } catch (err) {
     console.error("Error cancelling booking:", err);
@@ -462,7 +423,6 @@ app.post("/cancel-booking", async (req, res) => {
       .json({ error: "Error cancelling booking", details: err.message });
   }
 });
-
 // Menu Routes
 app.get("/menus", async (req, res) => {
   try {
@@ -476,7 +436,6 @@ app.get("/menus", async (req, res) => {
       .json({ error: "Error fetching menus", details: err.message });
   }
 });
-
 // Access Menu Routes
 app.get("/accessmenus", async (req, res) => {
   try {
@@ -495,7 +454,6 @@ app.get("/accessmenus", async (req, res) => {
       .json({ error: "Error fetching access menus", details: err.message });
   }
 });
-
 app.post("/accessmenus", async (req, res) => {
   const { PNUM, MNUM } = req.body;
   try {
@@ -504,16 +462,13 @@ app.post("/accessmenus", async (req, res) => {
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-
     const maxNo = maxNoResult.rows[0].MAX_NO || 0;
     const newNo = maxNo + 1;
-
     await executeQuery(
       `INSERT INTO accessmenu (NO, Pnum, Mnum) VALUES (:1, :2, :3)`,
       [newNo, PNUM, MNUM],
       { autoCommit: true }
     );
-
     res
       .status(201)
       .json({ message: "Access menu added successfully", NO: newNo });
@@ -524,7 +479,6 @@ app.post("/accessmenus", async (req, res) => {
       .json({ error: "Error adding access menu", details: error.message });
   }
 });
-
 app.put("/accessmenus/:id", async (req, res) => {
   const { id } = req.params;
   const { Pnum, Mnum } = req.body;
@@ -541,7 +495,6 @@ app.put("/accessmenus/:id", async (req, res) => {
       .json({ error: "Error updating access menu", details: err.message });
   }
 });
-
 app.delete("/accessmenus/:id", async (req, res) => {
   const { id } = req.params;
   try {
@@ -555,15 +508,12 @@ app.delete("/accessmenus/:id", async (req, res) => {
       .json({ error: "Error deleting access menu", details: err.message });
   }
 });
-
 // Email Route
 app.post("/send-email", async (req, res) => {
   const { name, email, subject, message } = req.body;
-
   if (!validator.validate(email)) {
     return res.status(400).json({ error: "Invalid email address" });
   }
-
   let transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
@@ -573,7 +523,6 @@ app.post("/send-email", async (req, res) => {
       pass: process.env.EMAIL_PASS,
     },
   });
-
   try {
     let info = await transporter.sendMail({
       from: `"${name}" <${process.env.EMAIL_USER}>`,
@@ -582,7 +531,6 @@ app.post("/send-email", async (req, res) => {
       text: `From: ${name} (${email})\n\nMessage: ${message}`,
       html: `<p><strong>From:</strong> ${name} (${email})</p><p><strong>Message:</strong> ${message}</p>`,
     });
-
     console.log("Message sent: %s", info.messageId);
     res
       .status(200)
@@ -594,7 +542,6 @@ app.post("/send-email", async (req, res) => {
       .json({ error: "Error sending email", details: error.message });
   }
 });
-
 // Login Route
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -609,15 +556,13 @@ app.post("/login", async (req, res) => {
       [email],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-
     if (result.rows.length === 0) {
       return res.status(401).json({ error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
     }
-
     const user = result.rows[0];
 
+    // Direct password comparison
     if (password === user.PW) {
-      // Direct password comparison
       delete user.PW;
       return res.json({
         success: true,
@@ -643,18 +588,14 @@ app.post("/login", async (req, res) => {
       .json({ error: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ", details: err.message });
   }
 });
-
 app.get("/history", async (req, res) => {
   try {
     const result = await executeQuery(
       `SELECT RESERVERID,CFRNUM ,BDATE, STARTTIME, ENDTIME, STUBOOKING, QR
        FROM RESERVE`,
-
       [],
-
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-
     res.json(result.rows);
   } catch (err) {
     res
@@ -662,7 +603,6 @@ app.get("/history", async (req, res) => {
       .json({ error: "Error fetching history", details: err.message });
   }
 });
-
 // Initialize server
 initializeDb()
   .then(() => {
