@@ -357,7 +357,9 @@ app.delete("/deleteroom/:id", async (req, res) => {
     await executeQuery(
       "DELETE FROM CONFERENCEROOM WHERE CFRNUMBER = :1",
       [id],
-      { autoCommit: true }
+      {
+        autoCommit: true,
+      }
     );
     res.json({ message: "Room deleted successfully" });
   } catch (err) {
@@ -366,6 +368,7 @@ app.delete("/deleteroom/:id", async (req, res) => {
       .json({ error: "Error deleting room", details: err.message });
   }
 });
+
 // Booking Routes
 app.get("/user-bookings/:ssn", async (req, res) => {
   const { ssn } = req.params;

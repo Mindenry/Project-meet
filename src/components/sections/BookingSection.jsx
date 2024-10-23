@@ -75,6 +75,18 @@ const BookingSection = () => {
     }
   }, [selectedBuilding, selectedFloor, participants]);
 
+  // Reset selections when participants change
+  useEffect(() => {
+    if (participants) {
+      form.setValue('building', '');
+      form.setValue('floor', '');
+      form.setValue('room', '');
+      setSelectedBuilding('');
+      setSelectedFloor('');
+      setRooms([]);
+    }
+  }, [participants]);
+
   const fetchBuildings = async () => {
     try {
       const response = await axios.get(`${API_URL}/buildings`);
@@ -87,10 +99,21 @@ const BookingSection = () => {
 
   const fetchFloors = async (buildingId) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/floors?buildingId=${buildingId}`
-      );
-      setFloors(response.data);
+      const response = await axios.get(`${API_URL}/floors?buildingId=${buildingId}`);
+      // Filter floors that have rooms with sufficient capacity
+      const allRooms = await axios.get(`${API_URL}/rooms`, {
+        params: { buildingId }
+      });
+      
+      const floorsWithCapacity = response.data.filter(floor => {
+        const floorRooms = allRooms.data.filter(room => 
+          room.FLNUM === floor.FLNUMBER && 
+          room.CAPACITY >= parseInt(participants)
+        );
+        return floorRooms.length > 0;
+      });
+      
+      setFloors(floorsWithCapacity);
     } catch (error) {
       console.error("Error fetching floors:", error);
       toast.error("ไม่สามารถดึงข้อมูลชั้นได้");
@@ -100,9 +123,15 @@ const BookingSection = () => {
   const fetchRooms = async (buildingId, floorId, participants) => {
     try {
       const response = await axios.get(`${API_URL}/rooms`, {
-        params: { buildingId, floorId, participants },
+        params: { buildingId, floorId }
       });
-      setRooms(response.data);
+      
+      // Filter rooms based on capacity
+      const filteredRooms = response.data.filter(room => 
+        room.CAPACITY >= parseInt(participants)
+      );
+      
+      setRooms(filteredRooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
       toast.error("ไม่สามารถดึงข้อมูลห้องประชุมได้");

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { Search, Plus, Trash2, CheckCircle, Edit, XCircle } from "lucide-react";
+import { Search, Plus, Trash2, Edit, XCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +64,10 @@ const fetchStatusrooms = async () => {
   return response.data;
 };
 
+const formatID = (id) => {
+  return id.toString().padStart(3, "0");
+};
+
 const RoomsSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -101,6 +105,20 @@ const RoomsSection = () => {
     queryKey: ["statusrooms"],
     queryFn: fetchStatusrooms,
   });
+
+  // Sort rooms automatically using useMemo
+  const sortedRooms = useMemo(() => {
+    return [...rooms].sort((a, b) => parseInt(a.CFRNUMBER) - parseInt(b.CFRNUMBER));
+  }, [rooms]);
+
+  // Filter sorted rooms
+  const filteredRooms = useMemo(() => {
+    return sortedRooms.filter((room) =>
+      Object.values(room).some((value) =>
+        value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [sortedRooms, searchTerm]);
 
   const addRoomMutation = useMutation({
     mutationFn: (newRoom) => axios.post(`${API_URL}/addroom`, newRoom),
@@ -191,12 +209,6 @@ const RoomsSection = () => {
     setNotifications((prev) => [newNotification, ...prev]);
   };
 
-  const filteredRooms = rooms.filter((room) =>
-    Object.values(room).some((value) =>
-      value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
   if (isLoadingRooms) return <div>กำลังโหลด...</div>;
 
   return (
@@ -242,7 +254,7 @@ const RoomsSection = () => {
             <TableBody>
               {filteredRooms.map((room) => (
                 <TableRow key={room.CFRNUMBER}>
-                  <TableCell>{room.CFRNUMBER}</TableCell>
+                  <TableCell>{formatID(room.CFRNUMBER)}</TableCell>
                   <TableCell>{room.CFRNAME}</TableCell>
                   <TableCell>{room.BDNAME}</TableCell>
                   <TableCell>{room.FLNAME}</TableCell>
@@ -258,19 +270,13 @@ const RoomsSection = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleAction("edit", room)}
-                        >
+                        <DropdownMenuItem onClick={() => handleAction("edit", room)}>
                           <Edit className="mr-2 h-4 w-4" /> แก้ไข
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleAction("delete", room)}
-                        >
+                        <DropdownMenuItem onClick={() => handleAction("delete", room)}>
                           <Trash2 className="mr-2 h-4 w-4" /> ลบ
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleAction("close", room)}
-                        >
+                        <DropdownMenuItem onClick={() => handleAction("close", room)}>
                           <XCircle className="mr-2 h-4 w-4" /> ปิดการใช้งาน
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -342,7 +348,7 @@ const RoomModal = ({
     CAPACITY: "",
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (room) {
       setFormData(room);
     } else {
@@ -385,7 +391,7 @@ const RoomModal = ({
               value={formData.CFRNUMBER}
               onChange={(e) => handleChange("CFRNUMBER", e.target.value)}
               className="col-span-3"
-              disabled={!!room} // ไม่อนุญาตให้แก้ไข ID เมื่อกำลังแก้ไขห้องที่มีอยู่แล้ว
+              disabled={!!room}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
@@ -548,7 +554,7 @@ const ApproveDialog = ({ isOpen, onClose, onApprove, room }) => {
     reason: "",
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (room) {
       setFormData({ ...room, reason: "" });
     }
