@@ -213,6 +213,54 @@ app.get("/room", async (req, res) => {
       .json({ error: "Error fetching rooms", details: err.message });
   }
 });
+
+app.get("/rooms", async (req, res) => {
+  const { buildingId, floorId, participants } = req.query;
+  try {
+    let query = `
+      SELECT c.CFRNUMBER, c.CFRNAME, b.BDNAME, f.FLNAME, r.RTNAME, 
+             s.STATUSROOMNAME, c.CAPACITY, c.BDNUM, c.FLNUM, c.RTNUM, c.STUROOM
+      FROM CONFERENCEROOM c
+      JOIN ROOMTYPE r ON c.RTNUM = r.Rtnumber
+      JOIN FLOOR f ON c.FLNUM = f.Flnumber
+      JOIN BUILDING b ON c.BDNUM = b.Bdnumber
+      JOIN STATUSROOM s ON c.STUROOM = s.STATUSROOMID
+      WHERE 1=1
+      AND c.STUROOM = 1 
+    `;
+
+    const params = [];
+
+    // Always filter by capacity if participants is provided
+    if (participants) {
+      query += ` AND c.CAPACITY >= :participants`;
+      params.push(participants);
+    }
+
+    if (buildingId) {
+      query += ` AND c.BDNUM = :buildingId`;
+      params.push(buildingId);
+    }
+
+    if (floorId) {
+      query += ` AND c.FLNUM = :floorId`;
+      params.push(floorId);
+    }
+
+    const result = await executeQuery(query, params, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching rooms:", err);
+    res.status(500).json({
+      error: "Error fetching rooms",
+      details: err.message,
+    });
+  }
+});
+
 // Building Routes
 app.get("/buildings", async (req, res) => {
   try {
