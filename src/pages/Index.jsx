@@ -23,7 +23,7 @@ const Index = () => {
   };
 
   const handleLogin = async (email, password) => {
-    if (email === "6511130005@mut.ac.th" && password === "1234") {
+    if (email === "admin@mut.ac.th" && password === "admin123") {
       login({ email, role: "admin" });
       return;
     }
