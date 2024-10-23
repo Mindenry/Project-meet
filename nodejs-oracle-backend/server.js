@@ -137,7 +137,7 @@ app.post("/addmembers", async (req, res) => {
     await executeQuery(
       `INSERT INTO EMPLOYEE (SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, PW)
        VALUES (:1, :2, :3, :4, :5, :6, :7, :8)`,
-      [SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, hashedPassword],
+      [(SSN, FNAME, LNAME, EMAIL, DNO, PNO, STUEMP, hashedPassword)],
       { autoCommit: true }
     );
     res.status(201).json({ message: "Member added successfully", SSN: SSN });
@@ -318,7 +318,8 @@ app.get("/statusrooms", async (req, res) => {
 });
 
 app.post("/addroom", async (req, res) => {
-  const { CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY } = req.body;
+  const { CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY } =
+    req.body;
   try {
     await executeQuery(
       `INSERT INTO CONFERENCEROOM (CFRNUMBER, CFRNAME, BDNUM, FLNUM, RTNUM, STUROOM, CAPACITY)
@@ -582,7 +583,7 @@ app.post("/accessmenus", async (req, res) => {
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    
+
     const maxNo = maxNoResult.rows[0].MAX_NO || 0;
     const newNo = maxNo + 1;
 
@@ -592,8 +593,10 @@ app.post("/accessmenus", async (req, res) => {
       { NO: newNo, PNUM: PNUM, MNUM: MNUM },
       { autoCommit: true }
     );
-    
-    res.status(201).json({ message: "Access menu added successfully", NO: newNo });
+
+    res
+      .status(201)
+      .json({ message: "Access menu added successfully", NO: newNo });
   } catch (error) {
     console.error("Error adding access menu:", error);
     return res
@@ -637,9 +640,9 @@ app.get("/history", async (req, res) => {
   try {
     const result = await executeQuery(
       `SELECT RESERVERID, CFRNUM, BDATE, STARTTIME, ENDTIME, STUBOOKING, QR 
-       FROM RESERVE`,  
-      [], 
-      { outFormat: oracledb.OUT_FORMAT_OBJECT } 
+       FROM RESERVE`,
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
     res.json(result.rows);
@@ -649,7 +652,6 @@ app.get("/history", async (req, res) => {
       .json({ error: "Error fetching history", details: err.message });
   }
 });
-
 
 app.delete("/cancel/:reserverId/:cfrNum", async (req, res) => {
   const { reserverId, cfrNum } = req.params;
@@ -669,11 +671,58 @@ app.delete("/cancel/:reserverId/:cfrNum", async (req, res) => {
       res.json({ message: "Booking cancelled successfully" });
     }
   } catch (err) {
-    res.status(500).json({ error: "Error cancelling booking", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error cancelling booking", details: err.message });
   }
 });
 
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const result = await executeQuery(
+      `SELECT e.SSN, e.EMAIL, e.PW, e.FNAME, e.LNAME, e.DNO, e.PNO, e.STUEMP,
+              p.PNAME as POSITION, d.DNAME as DEPARTMENT
+       FROM EMPLOYEE e
+       JOIN POSITION p ON e.PNO = p.PNUMBER
+       JOIN DEPARTMENT d ON e.DNO = d.DNUMBER
+       WHERE e.EMAIL = :1`,
+      [email],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
 
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
+    }
+
+    const user = result.rows[0];
+
+    if (password === user.PW) {
+      delete user.PW;
+      return res.json({
+        success: true,
+        user: {
+          ssn: user.SSN,
+          email: user.EMAIL,
+          firstName: user.FNAME,
+          lastName: user.LNAME,
+          position: user.POSITION,
+          department: user.DEPARTMENT,
+          departmentNo: user.DNO,
+          positionNo: user.PNO,
+          status: user.STUEMP,
+        },
+      });
+    } else {
+      return res.status(401).json({ error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
+    }
+  } catch (err) {
+    console.error("Login error:", err);
+    res
+      .status(500)
+      .json({ error: "เกิดข้อผิดพลาดในการเข้าสู่ระบบ", details: err.message });
+  }
+});
 
 initializeDb()
   .then(() => {

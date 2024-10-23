@@ -26,7 +26,7 @@ const Header = () => {
 
   const userMenuItems = [
     { icon: Calendar, label: "จองห้อง", path: "/dashboard/booking" },
-    { icon: XCircle, label: "ยกเลิกการจอง", path: "/dashboard/user-cancel" },
+    { icon: XCircle, label: "ประวัติการจอง", path: "/dashboard/user-cancel" },
     { icon: MessageCircle, label: "ติดต่อ", path: "/dashboard/contact" },
     { icon: Info, label: "เกี่ยวกับ", path: "/dashboard/about" },
   ];

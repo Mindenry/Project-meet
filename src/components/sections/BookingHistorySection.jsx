@@ -77,10 +77,10 @@ const BookingHistorySection = () => {
           essn: user.ssn,
         });
         toast.success("การจองถูกยกเลิกเรียบร้อยแล้ว");
-        
+
         // Refresh both history and bookings
         await Promise.all([fetchHistory(), fetchBookings()]);
-        
+
         setIsCancelModalOpen(false);
       } catch (error) {
         console.error("Error cancelling booking:", error);
@@ -91,7 +91,7 @@ const BookingHistorySection = () => {
 
   const handleShowQRCode = (booking) => {
     setSelectedBooking(booking);
-    setIsQRModalOpen(true); 
+    setIsQRModalOpen(true);
   };
 
   const getStatusBadge = (history) => {
@@ -99,7 +99,7 @@ const BookingHistorySection = () => {
     const bookingStart = new Date(history.STARTTIME);
     const bookingEnd = new Date(history.ENDTIME);
     const qrExpiration = addMinutes(bookingStart, 30);
-  
+
     if (history.STUBOOKING === 3) {
       return <Badge className="bg-red-500">ยกเลิกแล้ว</Badge>;
     } else if (isBefore(bookingEnd, now)) {

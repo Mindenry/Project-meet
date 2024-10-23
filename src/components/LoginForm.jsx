@@ -1,15 +1,46 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
 
 const LoginForm = ({ onToggleForm, onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin(username, password, rememberMe);
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("http://localhost:8080/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const userData = {
+          ...data.user,
+          role: "user",
+        };
+
+        onLogin(email, password);
+        toast.success("เข้าสู่ระบบสำเร็จ");
+      } else {
+        toast.error(data.error || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -19,12 +50,12 @@ const LoginForm = ({ onToggleForm, onLogin }) => {
       </h2>
       <div className="relative">
         <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           required
           className="w-full px-4 py-2 bg-white bg-opacity-10 border border-white border-opacity-30 rounded-md text-white placeholder-white placeholder-opacity-70 focus:outline-none focus:ring-2 focus:ring-[#e94560]"
-          placeholder="Username"
+          placeholder="Email"
         />
       </div>
       <div className="relative">
@@ -54,19 +85,13 @@ const LoginForm = ({ onToggleForm, onLogin }) => {
           />
           Remember me
         </label>
-        <button
-          type="button"
-          onClick={() => onToggleForm("register")}
-          className="text-[#e94560] hover:underline"
-        >
-          Register here
-        </button>
       </div>
       <button
         type="submit"
-        className="w-full py-2 bg-[#e94560] text-white font-bold rounded-md hover:bg-[#ff6b6b] transition duration-300"
+        disabled={isLoading}
+        className="w-full py-2 bg-[#e94560] text-white font-bold rounded-md hover:bg-[#ff6b6b] transition duration-300 disabled:opacity-50"
       >
-        Login
+        {isLoading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
       </button>
     </form>
   );

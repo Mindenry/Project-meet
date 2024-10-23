@@ -25,13 +25,6 @@ import AboutSection from "./sections/AboutSection";
 import BookingSection from "./sections/BookingSection";
 import ContactSection from "./sections/ContactSection";
 
-// Simulated user data (replace with actual data fetching logic later)
-const userData = {
-  name: "John Doe",
-  role: "user", // or "admin"
-  avatar: "/path/to/avatar.jpg",
-};
-
 const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

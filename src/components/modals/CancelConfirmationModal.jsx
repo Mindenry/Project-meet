@@ -28,7 +28,10 @@ const CancelConfirmationModal = ({ isOpen, onClose, onConfirm, booking }) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>ยกเลิก</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} className="bg-red-500 hover:bg-red-600">
+          <AlertDialogAction
+            onClick={onConfirm}
+            className="bg-red-500 hover:bg-red-600"
+          >
             ยืนยันการยกเลิก
           </AlertDialogAction>
         </AlertDialogFooter>

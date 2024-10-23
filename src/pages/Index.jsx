@@ -22,25 +22,35 @@ const Index = () => {
     setActiveForm(formType);
   };
 
-  const handleLogin = (username, password) => {
-    // Simulated authentication logic
-    if (
-      (username === "admin" && password === "admin123") ||
-      (username === "user" && password === "user123")
-    ) {
-      const role = username === "admin" ? "admin" : "user";
-      login({ username, role });
-    } else {
-      const users = JSON.parse(localStorage.getItem("users")) || [];
-      const user = users.find(
-        (u) => u.username === username && u.password === password
-      );
+  const handleLogin = async (email, password) => {
+    if (email === "admin@gmail.com" && password === "admin123") {
+      login({ email, role: "admin" });
+      return;
+    }
 
-      if (user) {
-        login({ username: user.username, role: user.role });
+    try {
+      const response = await fetch("http://localhost:8080/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const userData = {
+          ...data.user,
+          role: "user",
+        };
+        login(userData);
       } else {
-        toast.error("Invalid credentials");
+        toast.error(data.error || "Invalid credentials");
       }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Connection error");
     }
   };
 
