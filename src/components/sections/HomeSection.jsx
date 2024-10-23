@@ -20,6 +20,7 @@ import {
   Activity,
   DollarSign,
   Percent,
+  Download,
 } from "lucide-react";
 import axios from "axios";
 
@@ -45,7 +46,6 @@ const fetchStats = async () => {
 };
 
 const fetchChartData = async () => {
-  // Simulating API call
   const labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
   const data = labels.map(() => Math.floor(Math.random() * 1000));
   return {
@@ -54,20 +54,28 @@ const fetchChartData = async () => {
       {
         label: "Monthly Sales",
         data,
-        borderColor: "rgb(75, 192, 192)",
-        backgroundColor: "rgba(75, 192, 192, 0.5)",
-        tension: 0.1,
+        borderColor: "rgb(99, 102, 241)",
+        backgroundColor: "rgba(99, 102, 241, 0.1)",
+        tension: 0.4,
         fill: true,
+        pointRadius: 4,
+        pointBackgroundColor: "rgb(99, 102, 241)",
+        pointBorderColor: "white",
+        pointBorderWidth: 2,
       },
     ],
   };
 };
 
 const StatCard = ({ title, value, icon: Icon, trend }) => (
-  <Card>
+  <Card className="transition-all duration-200 hover:shadow-lg">
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <CardTitle className="text-sm font-medium text-muted-foreground">
+        {title}
+      </CardTitle>
+      <div className="h-8 w-8 rounded-lg bg-primary/10 p-2">
+        <Icon className="h-4 w-4 text-primary" />
+      </div>
     </CardHeader>
     <CardContent>
       <div className="text-2xl font-bold">{value}</div>
@@ -111,21 +119,30 @@ const HomeSection = () => {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold">Dashboard Overview</h2>
-        <Button>Download Report</Button>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
+          <p className="text-muted-foreground">
+            Your business analytics and performance metrics
+          </p>
+        </div>
+        <Button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-white">
+          <Download className="h-4 w-4" />
+          Download Report
+        </Button>
       </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Users"
-          value={stats.totalUsers}
+          value={stats.totalUsers.toLocaleString()}
           icon={Users}
           trend={5.75}
         />
         <StatCard
           title="Active Sessions"
-          value={stats.activeSessions}
+          value={stats.activeSessions.toLocaleString()}
           icon={Activity}
           trend={-2.34}
         />
@@ -142,26 +159,61 @@ const HomeSection = () => {
           trend={3.1}
         />
       </div>
-      <Card>
+
+      <Card className="transition-all duration-200 hover:shadow-lg">
         <CardHeader>
-          <CardTitle>Monthly Sales</CardTitle>
+          <CardTitle>Monthly Sales Performance</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: {
-                legend: {
-                  position: "top",
+        <CardContent className="pt-4">
+          <div className="h-[400px]">
+            <Line
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: "top",
+                    labels: {
+                      boxWidth: 10,
+                      usePointStyle: true,
+                      font: {
+                        size: 12,
+                      },
+                    },
+                  },
+                  tooltip: {
+                    backgroundColor: "white",
+                    titleColor: "black",
+                    bodyColor: "black",
+                    borderColor: "rgb(229, 231, 235)",
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: false,
+                    callbacks: {
+                      label: (context) => `฿${context.parsed.y.toLocaleString()}`,
+                    },
+                  },
                 },
-                title: {
-                  display: true,
-                  text: "Monthly Sales Overview",
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    grid: {
+                      color: "rgba(0, 0, 0, 0.05)",
+                    },
+                    ticks: {
+                      callback: (value) => `฿${value.toLocaleString()}`,
+                    },
+                  },
+                  x: {
+                    grid: {
+                      display: false,
+                    },
+                  },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

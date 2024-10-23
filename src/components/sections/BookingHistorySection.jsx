@@ -14,8 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { AlertCircle, QrCode, MoreVertical } from "lucide-react";
 import { format, addMinutes, isBefore } from "date-fns";
-import CancelConfirmationModal from "./CancelConfirmationModal";
-import QRCodeModal from "@/components/modals/QRCodeModal";
+import CancelConfirmationModal from "../modals/CancelConfirmationModal";
+import QRCodeModal from "../modals/QRCodeModal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,10 +32,27 @@ const BookingHistorySection = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [availableHistory, setAvailableHistory] = useState([]);
+
+  const fetchHistory = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/history`);
+      setAvailableHistory(response.data);
+    } catch (error) {
+      console.error("Error fetching history:", error);
+      toast.error("ไม่สามารถดึงข้อมูลการจองได้");
+    }
+  };
 
   useEffect(() => {
-    fetchBookings();
-  }, [user.ssn]);
+    fetchHistory();
+  }, []);
+
+  useEffect(() => {
+    if (user?.ssn) {
+      fetchBookings();
+    }
+  }, [user?.ssn]);
 
   const fetchBookings = async () => {
     try {
@@ -60,7 +77,10 @@ const BookingHistorySection = () => {
           essn: user.ssn,
         });
         toast.success("การจองถูกยกเลิกเรียบร้อยแล้ว");
-        fetchBookings(); // Refresh the bookings list
+        
+        // Refresh both history and bookings
+        await Promise.all([fetchHistory(), fetchBookings()]);
+        
         setIsCancelModalOpen(false);
       } catch (error) {
         console.error("Error cancelling booking:", error);
@@ -71,16 +91,18 @@ const BookingHistorySection = () => {
 
   const handleShowQRCode = (booking) => {
     setSelectedBooking(booking);
-    setIsQRModalOpen(true);
+    setIsQRModalOpen(true); // เปิดโมดัล QR Code
   };
 
-  const getStatusBadge = (booking) => {
+  const getStatusBadge = (history) => {
     const now = new Date();
-    const bookingStart = new Date(booking.STARTTIME);
-    const bookingEnd = new Date(booking.ENDTIME);
+    const bookingStart = new Date(history.STARTTIME);
+    const bookingEnd = new Date(history.ENDTIME);
     const qrExpiration = addMinutes(bookingStart, 30);
-
-    if (isBefore(bookingEnd, now)) {
+  
+    if (history.STUBOOKING === 3) {
+      return <Badge className="bg-red-500">ยกเลิกแล้ว</Badge>;
+    } else if (isBefore(bookingEnd, now)) {
       return <Badge className="bg-green-500">เสร็จสิ้น</Badge>;
     } else if (isBefore(now, bookingStart)) {
       return <Badge className="bg-blue-500">กำลังจะมาถึง</Badge>;
@@ -97,7 +119,7 @@ const BookingHistorySection = () => {
         <CardTitle className="text-2xl font-bold">ประวัติการจองห้อง</CardTitle>
       </CardHeader>
       <CardContent className="p-6">
-        {bookings.length === 0 ? (
+        {availableHistory.length === 0 ? (
           <div className="text-center py-8">
             <AlertCircle className="mx-auto h-12 w-12 text-gray-400" />
             <p className="mt-2 text-lg font-semibold text-gray-900">
@@ -122,25 +144,25 @@ const BookingHistorySection = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bookings.map((booking) => (
+                {availableHistory.map((history) => (
                   <TableRow
-                    key={booking.RESERVERID}
+                    key={history.RESERVERID}
                     className="hover:bg-gray-50"
                   >
                     <TableCell className="font-medium">
-                      {booking.RESERVERID}
+                      {history.RESERVERID}
                     </TableCell>
-                    <TableCell>{booking.CFRNUM}</TableCell>
+                    <TableCell>{history.CFRNUM}</TableCell>
                     <TableCell>
-                      {format(new Date(booking.BDATE), "dd MMM yyyy")}
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(booking.STARTTIME), "HH:mm")}
+                      {format(new Date(history.BDATE), "dd MMM yyyy")}
                     </TableCell>
                     <TableCell>
-                      {format(new Date(booking.ENDTIME), "HH:mm")}
+                      {format(new Date(history.STARTTIME), "HH:mm")}
                     </TableCell>
-                    <TableCell>{getStatusBadge(booking)}</TableCell>
+                    <TableCell>
+                      {format(new Date(history.ENDTIME), "HH:mm")}
+                    </TableCell>
+                    <TableCell>{getStatusBadge(history)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -150,16 +172,16 @@ const BookingHistorySection = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {booking.STUBOOKING === 1 && (
+                          {history.STUBOOKING === 1 && (
                             <DropdownMenuItem
-                              onClick={() => handleCancelBooking(booking)}
+                              onClick={() => handleCancelBooking(history)}
                               className="text-red-600"
                             >
                               ยกเลิก
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => handleShowQRCode(booking)}
+                            onClick={() => handleShowQRCode(history)}
                           >
                             <QrCode className="mr-2 h-4 w-4" /> QR Code
                           </DropdownMenuItem>

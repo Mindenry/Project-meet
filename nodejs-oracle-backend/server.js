@@ -633,6 +633,48 @@ app.delete("/accessmenus/:id", async (req, res) => {
   }
 });
 
+app.get("/history", async (req, res) => {
+  try {
+    const result = await executeQuery(
+      `SELECT RESERVERID, CFRNUM, BDATE, STARTTIME, ENDTIME, STUBOOKING, QR 
+       FROM RESERVE`,  
+      [], 
+      { outFormat: oracledb.OUT_FORMAT_OBJECT } 
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error fetching history", details: err.message });
+  }
+});
+
+
+app.delete("/cancel/:reserverId/:cfrNum", async (req, res) => {
+  const { reserverId, cfrNum } = req.params;
+
+  try {
+    const result = await executeQuery(
+      `UPDATE RESERVE 
+       SET STUBOOKING = 'CANCELLED' 
+       WHERE RESERVERID = :reserverId 
+       AND CFRNUM = :cfrNum`,
+      [reserverId, cfrNum]
+    );
+
+    if (result.rowsAffected === 0) {
+      res.status(404).json({ error: "Booking not found" });
+    } else {
+      res.json({ message: "Booking cancelled successfully" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Error cancelling booking", details: err.message });
+  }
+});
+
+
+
 initializeDb()
   .then(() => {
     app.listen(port, () => {
