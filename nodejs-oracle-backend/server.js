@@ -160,9 +160,8 @@ app.put("/updatemembers/:id", async (req, res) => {
     let params = [FNAME, LNAME, EMAIL, DNO, PNO, STUEMP];
 
     if (PW && PW.trim() !== "") {
-      const hashedPassword = await bcrypt.hash(PW, 10);
       updateQuery += `, PW = :7`;
-      params.push(hashedPassword);
+      params.push(PW); // Store password directly
     }
 
     updateQuery += ` WHERE SSN = :${params.length + 1}`;
@@ -616,9 +615,9 @@ app.post("/login", async (req, res) => {
     }
 
     const user = result.rows[0];
-    const isValidPassword = await bcrypt.compare(password, user.PW);
 
-    if (isValidPassword) {
+    if (password === user.PW) {
+      // Direct password comparison
       delete user.PW;
       return res.json({
         success: true,
