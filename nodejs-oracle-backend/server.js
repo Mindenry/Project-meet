@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const validator = require("email-validator");
+const bcrypt = require("bcrypt");
 const QRCode = require("qrcode");
 
 dotenv.config();
