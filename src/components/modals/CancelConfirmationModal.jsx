@@ -45,7 +45,7 @@ const CancelConfirmationModal = ({ isOpen, onClose, onConfirm, booking }) => {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-600/70">ห้องประชุม</p>
                   <p className="font-semibold text-blue-900">
-                    หมายเลข {booking.CFRNUM}
+                    ชื่อห้อง {booking.CFRNAME}
                   </p>
                 </div>
               </div>

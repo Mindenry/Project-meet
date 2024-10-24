@@ -2,7 +2,6 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import Background from "../components/Background";
 import LoginForm from "../components/LoginForm";
-import RegisterForm from "../components/RegisterForm";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../contexts/AuthContext";
 
