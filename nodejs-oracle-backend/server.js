@@ -659,6 +659,54 @@ app.get("/history", async (req, res) => {
       .json({ error: "Error fetching history", details: err.message });
   }
 });
+
+app.post("/cancel/:reserverId/:cfrNum", async (req, res) => {
+  const { reserverId, cfrNum } = req.params;
+
+  try {
+    const result = await executeQuery(
+      `UPDATE RESERVE 
+       SET STUBOOKING = 5
+       WHERE RESERVERID = :1 
+       AND CFRNUM = :2`,
+      [reserverId, cfrNum],
+      { 
+        autoCommit: true,
+        outFormat: oracledb.OUT_FORMAT_OBJECT 
+      }
+    );
+
+    if (result.rowsAffected === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "ไม่พบการจองที่ต้องการยกเลิก" 
+      });
+    }
+
+    // Fetch updated booking data
+    const updatedBooking = await executeQuery(
+      `SELECT RESERVERID, CFRNUM, BDATE, STARTTIME, ENDTIME, STUBOOKING, QR
+       FROM RESERVE
+       WHERE RESERVERID = :1`,
+      [reserverId],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json({ 
+      success: true,
+      message: "ยกเลิกการจองเรียบร้อยแล้ว",
+      booking: updatedBooking.rows[0]
+    });
+  } catch (err) {
+    console.error("Error cancelling booking:", err);
+    res.status(500).json({ 
+      success: false,
+      error: "เกิดข้อผิดพลาดในการยกเลิกการจอง", 
+      details: err.message 
+    });
+  }
+});
+
 // Initialize server
 initializeDb()
   .then(() => {
