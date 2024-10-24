@@ -34,7 +34,9 @@ const BookingHistorySection = () => {
   const fetchHistory = async () => {
     try {
       const response = await axios.get(`${API_URL}/history`);
-      setBookings(response.data);
+      // Sort bookings by RESERVERID numerically
+      const sortedBookings = response.data.sort((a, b) => a.RESERVERID - b.RESERVERID);
+      setBookings(sortedBookings);
     } catch (error) {
       console.error("Error fetching history:", error);
       toast.error("ไม่สามารถดึงข้อมูลการจองได้");
@@ -119,7 +121,7 @@ const BookingHistorySection = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>รหัสการจอง</TableHead>
-                  <TableHead>รหัสห้อง</TableHead>
+                  <TableHead>ชื่อห้อง</TableHead>
                   <TableHead>วันที่</TableHead>
                   <TableHead>เวลาเริ่มต้น</TableHead>
                   <TableHead>เวลาสิ้นสุด</TableHead>
@@ -133,7 +135,9 @@ const BookingHistorySection = () => {
                     <TableCell className="font-medium">
                       {booking.RESERVERID}
                     </TableCell>
-                    <TableCell>{booking.CFRNUM}</TableCell>
+                    <TableCell>
+                      <span className="font-medium">{booking.CFRNAME}</span>
+                    </TableCell>
                     <TableCell>
                       {format(new Date(booking.BDATE), "dd MMM yyyy")}
                     </TableCell>

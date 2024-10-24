@@ -647,8 +647,10 @@ app.post("/login", async (req, res) => {
 app.get("/history", async (req, res) => {
   try {
     const result = await executeQuery(
-      `SELECT RESERVERID,CFRNUM ,BDATE, STARTTIME, ENDTIME, STUBOOKING, QR
-       FROM RESERVE`,
+      `SELECT r.RESERVERID, c.CFRNAME, r.BDATE, r.STARTTIME, r.ENDTIME, r.STUBOOKING, r.QR
+       FROM RESERVE r
+       JOIN CONFERENCEROOM c ON r.CFRNUM = c.CFRNUMBER
+       ORDER BY r.RESERVERID ASC`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
