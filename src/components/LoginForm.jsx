@@ -16,10 +16,10 @@ const LoginForm = ({ onToggleForm }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("กรุณากรอกอีเมลและรหัสผ่าน");
+      toast.error("กรุณากรอกอีเมลและรหัสผ่าน", { duration: 1000 }); // แจ้งเตือนหายหลัง 1 วิ
       return;
     }
-    
+
     setIsLoading(true);
 
     try {
@@ -29,12 +29,11 @@ const LoginForm = ({ onToggleForm }) => {
           email,
           role: "admin",
           firstName: "Admin",
-          lastName: "User"
+          lastName: "User",
         };
-        
+
         login(adminData, rememberMe);
-        // toast.success("เข้าสู่ระบบสำเร็จ");
-        navigate('/dashboard');
+        navigate("/dashboard");
         return;
       }
 
@@ -53,16 +52,18 @@ const LoginForm = ({ onToggleForm }) => {
           ...data.user,
           role: "user",
         };
-        
+
         login(userData, rememberMe);
-        // toast.success("เข้าสู่ระบบสำเร็จ");
-        navigate('/dashboard');
+        toast.success("เข้าสู่ระบบสำเร็จ", { duration: 1000 }); // แจ้งเตือนหายหลัง 2 วิ
+        navigate("/dashboard");
       } else {
-        toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง", {
+          duration: 2000,
+        }); // แจ้งเตือนหายหลัง 2 วิ
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", { duration: 1000 }); // แจ้งเตือนหายหลัง 2 วิ
     } finally {
       setIsLoading(false);
     }
