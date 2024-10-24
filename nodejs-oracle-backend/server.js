@@ -707,6 +707,8 @@ app.post("/cancel/:reserverId/:cfrNum", async (req, res) => {
   }
 });
 
+
+
 // Initialize server
 initializeDb()
   .then(() => {

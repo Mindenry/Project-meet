@@ -19,6 +19,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import CancelConfirmationModal from "../modals/CancelConfirmationModal";
+import QRCodeModal from "../modals/QRCodeModal";
 import axios from "axios";
 
 const API_URL = "http://localhost:8080";
@@ -26,6 +28,8 @@ const API_URL = "http://localhost:8080";
 const BookingHistorySection = () => {
   const [bookings, setBookings] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
 
   const fetchHistory = async () => {
     try {
@@ -41,31 +45,43 @@ const BookingHistorySection = () => {
     fetchHistory();
   }, []);
 
-  const handleCancelBooking = async (booking) => {
-    try {
-      const response = await axios.post(`${API_URL}/cancel/${booking.RESERVERID}/${booking.CFRNUM}`);
-      
-      if (response.data.success) {
-        // Update local state immediately
-        setBookings(prevBookings => 
-          prevBookings.map(b => 
-            b.RESERVERID === booking.RESERVERID 
-              ? { ...b, STUBOOKING: 5 } 
-              : b
-          )
+  const handleCancelBooking = (booking) => {
+    setSelectedBooking(booking);
+    setIsCancelModalOpen(true);
+  };
+
+  const confirmCancelBooking = async () => {
+    if (selectedBooking) {
+      try {
+        const response = await axios.post(
+          `${API_URL}/cancel/${selectedBooking.RESERVERID}/${selectedBooking.CFRNUM}`
         );
         
-        toast.success("การจองถูกยกเลิกเรียบร้อยแล้ว");
-        
-        // Fetch fresh data from server
-        await fetchHistory();
-      } else {
-        toast.error(response.data.error || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
+        if (response.data.success) {
+          setBookings(prevBookings => 
+            prevBookings.map(b => 
+              b.RESERVERID === selectedBooking.RESERVERID 
+                ? { ...b, STUBOOKING: 5 } 
+                : b
+            )
+          );
+          
+          toast.success("การจองถูกยกเลิกเรียบร้อยแล้ว");
+          await fetchHistory();
+        } else {
+          toast.error(response.data.error || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
+        }
+        setIsCancelModalOpen(false);
+      } catch (error) {
+        console.error("Error cancelling booking:", error);
+        toast.error(error.response?.data?.error || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
       }
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
-      toast.error(error.response?.data?.error || "เกิดข้อผิดพลาดในการยกเลิกการจอง");
     }
+  };
+
+  const handleShowQRCode = (booking) => {
+    setSelectedBooking(booking);
+    setIsQRModalOpen(true);
   };
 
   const getStatusBadge = (status) => {
@@ -146,7 +162,7 @@ const BookingHistorySection = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => toast.info(`QR Code: ${booking.QR}`)}
+                            onClick={() => handleShowQRCode(booking)}
                           >
                             <QrCode className="mr-2 h-4 w-4" /> QR Code
                           </DropdownMenuItem>
@@ -160,6 +176,17 @@ const BookingHistorySection = () => {
           </div>
         )}
       </CardContent>
+      <CancelConfirmationModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onConfirm={confirmCancelBooking}
+        booking={selectedBooking}
+      />
+      <QRCodeModal
+        isOpen={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        booking={selectedBooking}
+      />
     </Card>
   );
 };
