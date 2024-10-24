@@ -1,20 +1,18 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import Background from "../components/Background";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../contexts/AuthContext";
 
 const Index = () => {
   const [activeForm, setActiveForm] = React.useState("login");
-  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-  React.useEffect(() => {
-    const isAuthenticated = localStorage.getItem('isAuthenticated') || sessionStorage.getItem('isAuthenticated');
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [navigate]);
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const toggleForm = (formType) => {
     setActiveForm(formType);

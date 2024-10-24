@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const LoginForm = ({ onToggleForm }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,6 +14,11 @@ const LoginForm = ({ onToggleForm }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast.error("กรุณากรอกอีเมลและรหัสผ่าน");
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -25,16 +31,12 @@ const LoginForm = ({ onToggleForm }) => {
           lastName: "User"
         };
         
-        if (rememberMe) {
-          localStorage.setItem('user', JSON.stringify(adminData));
-          localStorage.setItem('isAuthenticated', 'true');
-        } else {
-          sessionStorage.setItem('user', JSON.stringify(adminData));
-          sessionStorage.setItem('isAuthenticated', 'true');
-        }
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('user', JSON.stringify(adminData));
+        storage.setItem('isAuthenticated', 'true');
         
         toast.success("เข้าสู่ระบบสำเร็จ");
-        navigate('/dashboard', { replace: true });
+        navigate('/dashboard');
         return;
       }
 
@@ -54,16 +56,12 @@ const LoginForm = ({ onToggleForm }) => {
           role: "user",
         };
         
-        if (rememberMe) {
-          localStorage.setItem('user', JSON.stringify(userData));
-          localStorage.setItem('isAuthenticated', 'true');
-        } else {
-          sessionStorage.setItem('user', JSON.stringify(userData));
-          sessionStorage.setItem('isAuthenticated', 'true');
-        }
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('user', JSON.stringify(userData));
+        storage.setItem('isAuthenticated', 'true');
 
         toast.success("เข้าสู่ระบบสำเร็จ");
-        navigate('/dashboard', { replace: true });
+        navigate('/dashboard');
       } else {
         toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       }
