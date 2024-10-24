@@ -41,7 +41,6 @@ const Header = () => {
         transition={{ duration: 0.5 }}
         className="flex items-center"
       >
-        {/* ... keep existing code */}
       </motion.div>
       <nav className="hidden md:flex items-center space-x-4">
         {userMenuItems.map((item, index) => (
@@ -62,29 +61,40 @@ const Header = () => {
         ))}
       </nav>
       <div className="flex items-center space-x-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="flex items-center space-x-2 hover:bg-gray-100 transition-all duration-300"
-            >
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="font-medium text-gray-700">
-                {user?.firstName} {user?.lastName}
-              </span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-red-600 hover:bg-red-50 cursor-pointer"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>ออกจากระบบ</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
+      <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative group px-4 py-2 hover:bg-blue-50/50"
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center space-x-3"
+                  >
+                    <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
+                      <User className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                      {user?.firstName} {user?.lastName}
+                    </span>
+                  </motion.div>
+                </Button>
+              </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 p-1">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-600 hover:bg-red-50 cursor-pointer rounded-lg transition-all duration-200"
+                >
+                  <motion.div
+                    whileHover={{ x: 4 }}
+                    className="flex items-center space-x-2 py-1.5"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>ออกจากระบบ</span>
+                  </motion.div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
