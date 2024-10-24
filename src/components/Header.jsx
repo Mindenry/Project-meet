@@ -9,7 +9,6 @@ import {
   MessageCircle,
   Info,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
 import { motion } from "framer-motion";
 import {
   DropdownMenu,
@@ -20,9 +19,9 @@ import {
 import { Button } from "./ui/button";
 
 const Header = () => {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const userData = JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || '{}');
 
   const userMenuItems = [
     { icon: Calendar, label: "จองห้อง", path: "/dashboard/booking" },
@@ -32,10 +31,21 @@ const Header = () => {
   ];
 
   const handleLogout = () => {
-    logout();
-    navigate("/");
+    localStorage.removeItem('user');
+    localStorage.removeItem('isAuthenticated');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('isAuthenticated');
+    navigate('/', { replace: true });
     toast.success("ออกจากระบบสำเร็จ");
   };
+
+  // Protect the header from unauthorized access
+  React.useEffect(() => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated') || sessionStorage.getItem('isAuthenticated');
+    if (!isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate]);
 
   return (
     <header className="bg-white shadow-lg py-4 px-6 flex justify-between items-center">
@@ -82,7 +92,7 @@ const Header = () => {
                 <User className="h-5 w-5 text-blue-600" />
               </div>
               <span className="font-medium text-gray-700 hover:text-blue-600 transition-colors duration-300">
-                {user.username}
+                {userData.firstName} {userData.lastName}
               </span>
             </Button>
           </DropdownMenuTrigger>

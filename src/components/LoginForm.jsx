@@ -1,19 +1,43 @@
 import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-const LoginForm = ({ onToggleForm, onLogin }) => {
+const LoginForm = ({ onToggleForm }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      // Check for admin login first
+      if (email === "admin@mut.ac.th" && password === "admin123") {
+        const adminData = {
+          email,
+          role: "admin",
+          firstName: "Admin",
+          lastName: "User"
+        };
+        
+        if (rememberMe) {
+          localStorage.setItem('user', JSON.stringify(adminData));
+          localStorage.setItem('isAuthenticated', 'true');
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(adminData));
+          sessionStorage.setItem('isAuthenticated', 'true');
+        }
+        
+        toast.success("เข้าสู่ระบบสำเร็จ");
+        navigate('/dashboard', { replace: true });
+        return;
+      }
+
       const response = await fetch("http://localhost:8080/login", {
         method: "POST",
         headers: {
@@ -29,11 +53,19 @@ const LoginForm = ({ onToggleForm, onLogin }) => {
           ...data.user,
           role: "user",
         };
+        
+        if (rememberMe) {
+          localStorage.setItem('user', JSON.stringify(userData));
+          localStorage.setItem('isAuthenticated', 'true');
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(userData));
+          sessionStorage.setItem('isAuthenticated', 'true');
+        }
 
-        onLogin(email, password);
         toast.success("เข้าสู่ระบบสำเร็จ");
+        navigate('/dashboard', { replace: true });
       } else {
-        toast.error(data.error || "เกิดข้อผิดพลาดในการเข้าสู่ระบบ");
+        toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
       }
     } catch (err) {
       console.error("Login error:", err);

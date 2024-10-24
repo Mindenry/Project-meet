@@ -1,75 +1,23 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { useAuth } from "../contexts/AuthContext";
 import Background from "../components/Background";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import { motion, AnimatePresence } from "framer-motion";
 
 const Index = () => {
-  const [activeForm, setActiveForm] = useState("login");
+  const [activeForm, setActiveForm] = React.useState("login");
   const navigate = useNavigate();
-  const { user, login } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      navigate("/dashboard");
+  React.useEffect(() => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated') || sessionStorage.getItem('isAuthenticated');
+    if (isAuthenticated) {
+      navigate('/dashboard', { replace: true });
     }
-  }, [user, navigate]);
+  }, [navigate]);
 
   const toggleForm = (formType) => {
     setActiveForm(formType);
-  };
-
-  const handleLogin = async (email, password) => {
-    if (email === "admin@mut.ac.th" && password === "admin123") {
-      login({ email, role: "admin" });
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:8080/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        const userData = {
-          ...data.user,
-          role: "user",
-        };
-        login(userData);
-      } else {
-        toast.error(data.error || "Invalid credentials");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      toast.error("Connection error");
-    }
-  };
-
-  const handleRegister = (formData) => {
-    const { username, password, email } = formData;
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    const userExists = users.some(
-      (user) => user.username === username || user.email === email
-    );
-
-    if (userExists) {
-      toast.error("Username or email already exists");
-    } else {
-      const newUser = { ...formData, role: "user" };
-      users.push(newUser);
-      localStorage.setItem("users", JSON.stringify(users));
-      toast.success("Registration successful. Please log in.");
-      setActiveForm("login");
-    }
   };
 
   return (
@@ -97,7 +45,7 @@ const Index = () => {
               exit={{ opacity: 0, x: 100 }}
               transition={{ duration: 0.3 }}
             >
-              <LoginForm onToggleForm={toggleForm} onLogin={handleLogin} />
+              <LoginForm onToggleForm={toggleForm} />
             </motion.div>
           ) : (
             <motion.div
@@ -107,10 +55,7 @@ const Index = () => {
               exit={{ opacity: 0, x: -100 }}
               transition={{ duration: 0.3 }}
             >
-              <RegisterForm
-                onToggleForm={toggleForm}
-                onRegister={handleRegister}
-              />
+              <RegisterForm onToggleForm={toggleForm} />
             </motion.div>
           )}
         </AnimatePresence>
