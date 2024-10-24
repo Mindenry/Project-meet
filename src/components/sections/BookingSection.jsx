@@ -78,11 +78,11 @@ const BookingSection = () => {
   // Reset selections when participants change
   useEffect(() => {
     if (participants) {
-      form.setValue('building', '');
-      form.setValue('floor', '');
-      form.setValue('room', '');
-      setSelectedBuilding('');
-      setSelectedFloor('');
+      form.setValue("building", "");
+      form.setValue("floor", "");
+      form.setValue("room", "");
+      setSelectedBuilding("");
+      setSelectedFloor("");
       setRooms([]);
     }
   }, [participants]);
@@ -99,20 +99,23 @@ const BookingSection = () => {
 
   const fetchFloors = async (buildingId) => {
     try {
-      const response = await axios.get(`${API_URL}/floors?buildingId=${buildingId}`);
+      const response = await axios.get(
+        `${API_URL}/floors?buildingId=${buildingId}`
+      );
       // Filter floors that have rooms with sufficient capacity
       const allRooms = await axios.get(`${API_URL}/rooms`, {
-        params: { buildingId }
+        params: { buildingId },
       });
-      
-      const floorsWithCapacity = response.data.filter(floor => {
-        const floorRooms = allRooms.data.filter(room => 
-          room.FLNUM === floor.FLNUMBER && 
-          room.CAPACITY >= parseInt(participants)
+
+      const floorsWithCapacity = response.data.filter((floor) => {
+        const floorRooms = allRooms.data.filter(
+          (room) =>
+            room.FLNUM === floor.FLNUMBER &&
+            room.CAPACITY >= parseInt(participants)
         );
         return floorRooms.length > 0;
       });
-      
+
       setFloors(floorsWithCapacity);
     } catch (error) {
       console.error("Error fetching floors:", error);
@@ -123,14 +126,14 @@ const BookingSection = () => {
   const fetchRooms = async (buildingId, floorId, participants) => {
     try {
       const response = await axios.get(`${API_URL}/rooms`, {
-        params: { buildingId, floorId }
+        params: { buildingId, floorId },
       });
-      
+
       // Filter rooms based on capacity
-      const filteredRooms = response.data.filter(room => 
-        room.CAPACITY >= parseInt(participants)
+      const filteredRooms = response.data.filter(
+        (room) => room.CAPACITY >= parseInt(participants)
       );
-      
+
       setRooms(filteredRooms);
     } catch (error) {
       console.error("Error fetching rooms:", error);
@@ -172,30 +175,30 @@ const BookingSection = () => {
     }
   };
 
-  const QRCodeDisplay = ({ bookingData }) => {
-    if (!bookingData) return null;
+  // const QRCodeDisplay = ({ bookingData }) => {
+  //   if (!bookingData) return null;
 
-    const { RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, ESSN } = bookingData;
+  //   const { RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, ESSN } = bookingData;
 
-    const qrContent = `
-      การจองห้องประชุม
-      รหัสการจอง: ${RESERVERID}
-      วันที่: ${format(new Date(BDATE), "dd/MM/yyyy")}
-      เวลาเริ่มต้น: ${format(new Date(STARTTIME), "HH:mm")}
-      เวลาสิ้นสุด: ${format(new Date(ENDTIME), "HH:mm")}
-      ห้องประชุม: ${CFRNUM}
-      ผู้จอง: ${ESSN || "ไม่ระบุ"}
-    `;
+  //   const qrContent = `
+  //     การจองห้องประชุม
+  //     รหัสการจอง: ${RESERVERID}
+  //     วันที่: ${format(new Date(BDATE), "dd/MM/yyyy")}
+  //     เวลาเริ่มต้น: ${format(new Date(STARTTIME), "HH:mm")}
+  //     เวลาสิ้นสุด: ${format(new Date(ENDTIME), "HH:mm")}
+  //     ห้องประชุม: ${CFRNUM}
+  //     ผู้จอง: ${ESSN || "ไม่ระบุ"}
+  //   `;
 
-    return (
-      <div className="mt-6 text-center">
-        <h3 className="text-lg font-semibold mb-2">QR Code สำหรับการจอง</h3>
-        <div className="inline-block p-4 bg-white rounded-lg shadow-md">
-          <QRCodeSVG value={qrContent} size={200} />
-        </div>
-      </div>
-    );
-  };
+  //   return (
+  //     <div className="mt-6 text-center">
+  //       <h3 className="text-lg font-semibold mb-2">QR Code สำหรับการจอง</h3>
+  //       <div className="inline-block p-4 bg-white rounded-lg shadow-md">
+  //         <QRCodeSVG value={qrContent} size={200} />
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
   return (
     <Card className="max-w-3xl mx-auto overflow-hidden shadow-2xl rounded-xl">
@@ -457,7 +460,7 @@ const BookingSection = () => {
             </Button>
           </form>
         </Form>
-        <QRCodeDisplay bookingData={bookingData} />
+        {/* <QRCodeDisplay bookingData={bookingData} /> */}
       </CardContent>
     </Card>
   );

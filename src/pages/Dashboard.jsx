@@ -17,7 +17,7 @@ import ContactSection from "../components/sections/ContactSection";
 import BookingHistorySection from "../components/sections/BookingHistorySection";
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
 
@@ -32,7 +32,7 @@ const Dashboard = () => {
   };
 
   if (!user) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return (
@@ -42,22 +42,37 @@ const Dashboard = () => {
         <Header toggleSidebar={toggleSidebar} />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6">
           <Routes>
-            <Route path="/" element={<HomeSection />} />
-            {user.role === "admin" && (
-              <>
-                <Route path="/members" element={<MembersSection />} />
-                <Route path="/rooms" element={<RoomsSection />} />
-                <Route path="/access" element={<AccessSection />} />
-                <Route path="/blacklist" element={<BlacklistSection />} />
-                <Route path="/cancel" element={<CancelSection />} />
-                <Route path="/report" element={<ReportSection />} />
-                <Route path="/permissions" element={<PermissionsSection />} />
-              </>
+            {hasPermission(1) && <Route path="/" element={<HomeSection />} />}
+            {hasPermission(2) && (
+              <Route path="/members" element={<MembersSection />} />
             )}
-            <Route path="/booking" element={<BookingSection />} />
-            <Route path="/user-cancel" element={<BookingHistorySection />} />
-            <Route path="/about" element={<AboutSection />} />
-            <Route path="/contact" element={<ContactSection />} />
+            {hasPermission(3) && (
+              <Route path="/rooms" element={<RoomsSection />} />
+            )}
+            {hasPermission(4) && (
+              <Route path="/access" element={<AccessSection />} />
+            )}
+            {hasPermission(5) && (
+              <Route path="/blacklist" element={<BlacklistSection />} />
+            )}
+            {hasPermission(6) && (
+              <Route path="/report" element={<ReportSection />} />
+            )}
+            {hasPermission(7) && (
+              <Route path="/permissions" element={<PermissionsSection />} />
+            )}
+            {hasPermission(8) && (
+              <Route path="/booking" element={<BookingSection />} />
+            )}
+            {hasPermission(9) && (
+              <Route path="/user-cancel" element={<BookingHistorySection />} />
+            )}
+            {hasPermission(10) && (
+              <Route path="/contact" element={<ContactSection />} />
+            )}
+            {hasPermission(11) && (
+              <Route path="/about" element={<AboutSection />} />
+            )}
             <Route path="*" element={<AccessDenied />} />
           </Routes>
         </main>
@@ -69,8 +84,10 @@ const Dashboard = () => {
 const AccessDenied = () => (
   <div className="flex items-center justify-center h-full">
     <div className="text-center">
-      <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-      <p>You do not have permission to view this page.</p>
+      <h2 className="text-2xl font-bold mb-4 text-red-600">Access Denied</h2>
+      <p className="text-gray-600">
+        You do not have permission to view this page.
+      </p>
     </div>
   </div>
 );

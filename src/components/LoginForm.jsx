@@ -16,27 +16,13 @@ const LoginForm = ({ onToggleForm }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("กรุณากรอกอีเมลและรหัสผ่าน", { duration: 1000 }); // แจ้งเตือนหายหลัง 1 วิ
+      toast.error("กรุณากรอกอีเมลและรหัสผ่าน", { duration: 1000 });
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Check for admin login first
-      if (email === "admin@mut.ac.th" && password === "admin123") {
-        const adminData = {
-          email,
-          role: "admin",
-          firstName: "Admin",
-          lastName: "User",
-        };
-
-        login(adminData, rememberMe);
-        navigate("/dashboard");
-        return;
-      }
-
       const response = await fetch("http://localhost:8080/login", {
         method: "POST",
         headers: {
@@ -50,20 +36,20 @@ const LoginForm = ({ onToggleForm }) => {
       if (response.ok && data.success) {
         const userData = {
           ...data.user,
-          role: "user",
+          positionNo: data.user.positionNo || 3, // Default to Employee (PNUM 3) if not specified
         };
 
         login(userData, rememberMe);
-        toast.success("เข้าสู่ระบบสำเร็จ", { duration: 1000 }); // แจ้งเตือนหายหลัง 2 วิ
+        toast.success("เข้าสู่ระบบสำเร็จ", { duration: 1000 });
         navigate("/dashboard");
       } else {
         toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง", {
           duration: 2000,
-        }); // แจ้งเตือนหายหลัง 2 วิ
+        });
       }
     } catch (err) {
       console.error("Login error:", err);
-      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", { duration: 1000 }); // แจ้งเตือนหายหลัง 2 วิ
+      toast.error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้", { duration: 1000 });
     } finally {
       setIsLoading(false);
     }

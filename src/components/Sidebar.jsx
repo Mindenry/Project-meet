@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   Users,
   DoorOpen,
   Key,
   Ban,
-  XCircle,
   BarChart2,
   Lock,
   ChevronLeft,
@@ -20,59 +19,68 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
-import { toast } from "sonner";
 
 const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { hasPermission } = useAuth();
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const menuItems = [
-    { name: "home", icon: Home, label: "หน้าหลัก", path: "/dashboard" },
     {
-      name: "members",
+      mnum: 1,
+      name: "หน้าหลัก",
+      icon: Home,
+      label: "หน้าหลัก",
+      path: "/dashboard",
+    },
+    {
+      mnum: 2,
+      name: "จัดการสมาชิก",
       icon: Users,
       label: "สมาชิก",
       path: "/dashboard/members",
-      adminOnly: true,
     },
     {
-      name: "rooms",
+      mnum: 3,
+      name: "จัดการห้องประชุม",
       icon: DoorOpen,
       label: "ห้องประชุม",
       path: "/dashboard/rooms",
-      adminOnly: true,
     },
     {
-      name: "access",
+      mnum: 4,
+      name: "จัดการเข้าใช้งานห้อง",
       icon: Key,
       label: "การเข้าถึง",
       path: "/dashboard/access",
-      adminOnly: true,
     },
     {
-      name: "blacklist",
+      mnum: 5,
+      name: "ปลดเเบน",
       icon: Ban,
       label: "ล็อคสมาชิก",
       path: "/dashboard/blacklist",
-      adminOnly: true,
     },
     {
-      name: "report",
+      mnum: 6,
+      name: "รายงาน",
       icon: BarChart2,
       label: "รายงาน",
       path: "/dashboard/report",
-      adminOnly: true,
     },
     {
-      name: "permissions",
+      mnum: 7,
+      name: "สิทธิ์การใช้งาน",
       icon: Lock,
       label: "สิทธิ์การใช้งาน",
       path: "/dashboard/permissions",
-      adminOnly: true,
     },
   ];
+
+  // กรองเมนูตามสิทธิ์การเข้าถึง
+  const filteredMenuItems = menuItems.filter((item) =>
+    hasPermission(item.mnum)
+  );
 
   const sidebarVariants = {
     expanded: { width: 256 },
@@ -87,14 +95,6 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
   const itemVariants = {
     expanded: { opacity: 1, x: 0 },
     collapsed: { opacity: 0, x: -20 },
-  };
-
-  const handleItemClick = (item) => {
-    if (item.adminOnly && user.role !== "admin") {
-      toast.error("คุณไม่มีสิทธิ์เข้าถึงหน้านี้", { duration: 3000 });
-    } else {
-      navigate(item.path);
-    }
   };
 
   return (
@@ -134,7 +134,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         </div>
         <nav className="mt-8 px-2">
           <AnimatePresence>
-            {menuItems.map((item) => (
+            {filteredMenuItems.map((item) => (
               <motion.div
                 key={item.name}
                 initial="collapsed"
@@ -147,47 +147,35 @@ const Sidebar = ({ isCollapsed, toggleSidebar }) => {
               >
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div
-                      onClick={() => handleItemClick(item)}
-                      className={`flex items-center py-3 px-4 rounded-lg mb-2 ${
-                        location.pathname === item.path
-                          ? "bg-white bg-opacity-20 shadow-lg"
-                          : "hover:bg-white hover:bg-opacity-10"
-                      } transition-all duration-300 group relative overflow-hidden ${
-                        item.adminOnly && user.role !== "admin"
-                          ? "cursor-not-allowed opacity-50"
-                          : "cursor-pointer"
-                      }`}
-                    >
-                      <item.icon
-                        className={`h-6 w-6 ${
-                          isCollapsed ? "mx-auto" : "mr-3"
-                        } transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
-                      />
-                      {!isCollapsed && (
-                        <span className="font-medium truncate">
-                          {item.label}
-                        </span>
-                      )}
-                      {location.pathname === item.path && (
-                        <motion.div
-                          className="absolute left-0 w-1 h-8 bg-gradient-to-b from-pink-500 via-purple-500 to-indigo-500 rounded-r-full"
-                          layoutId="activeIndicator"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
+                    <Link to={item.path}>
+                      <div
+                        className={`flex items-center py-3 px-4 rounded-lg mb-2 ${
+                          location.pathname === item.path
+                            ? "bg-white bg-opacity-20 shadow-lg"
+                            : "hover:bg-white hover:bg-opacity-10"
+                        } transition-all duration-300 group relative overflow-hidden cursor-pointer`}
+                      >
+                        <item.icon
+                          className={`h-6 w-6 ${
+                            isCollapsed ? "mx-auto" : "mr-3"
+                          } transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
                         />
-                      )}
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300"
-                        initial={false}
-                        animate={
-                          hoveredItem === item.name
-                            ? { opacity: 0.1 }
-                            : { opacity: 0 }
-                        }
-                      />
-                    </div>
+                        {!isCollapsed && (
+                          <span className="font-medium truncate">
+                            {item.label}
+                          </span>
+                        )}
+                        {location.pathname === item.path && (
+                          <motion.div
+                            className="absolute left-0 w-1 h-8 bg-gradient-to-b from-pink-500 via-purple-500 to-indigo-500 rounded-r-full"
+                            layoutId="activeIndicator"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                          />
+                        )}
+                      </div>
+                    </Link>
                   </TooltipTrigger>
                   {isCollapsed && (
                     <TooltipContent side="right" sideOffset={10}>

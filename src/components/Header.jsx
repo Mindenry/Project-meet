@@ -1,6 +1,5 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import {
   User,
   LogOut,
@@ -20,14 +19,30 @@ import { Button } from "./ui/button";
 import { useAuth } from "../contexts/AuthContext";
 
 const Header = () => {
-  const { user, logout } = useAuth();
-  
+  const { user, logout, hasPermission } = useAuth();
+
+  // เมนูที่ต้องการ permission ในการแสดง
   const userMenuItems = [
-    { icon: Calendar, label: "จองห้อง", path: "/dashboard/booking" },
-    { icon: XCircle, label: "ประวัติการจอง", path: "/dashboard/user-cancel" },
-    { icon: MessageCircle, label: "ติดต่อ", path: "/dashboard/contact" },
-    { icon: Info, label: "เกี่ยวกับ", path: "/dashboard/about" },
+    { mnum: 8, icon: Calendar, label: "จองห้อง", path: "/dashboard/booking" },
+    {
+      mnum: 9,
+      icon: XCircle,
+      label: "ประวัติการจอง",
+      path: "/dashboard/user-cancel",
+    },
+    {
+      mnum: 10,
+      icon: MessageCircle,
+      label: "ติดต่อ",
+      path: "/dashboard/contact",
+    },
+    { mnum: 11, icon: Info, label: "เกี่ยวกับ", path: "/dashboard/about" },
   ];
+
+  // ตรวจสอบสิทธิ์ในการเข้าถึงเมนู
+  const filteredUserMenuItems = userMenuItems.filter((item) =>
+    hasPermission(item.mnum)
+  );
 
   const handleLogout = () => {
     logout();
@@ -41,9 +56,10 @@ const Header = () => {
         transition={{ duration: 0.5 }}
         className="flex items-center"
       >
+        {/* ช่องว่างสำหรับการจัดรูปแบบ */}
       </motion.div>
       <nav className="hidden md:flex items-center space-x-4">
-        {userMenuItems.map((item, index) => (
+        {filteredUserMenuItems.map((item, index) => (
           <motion.div
             key={item.label}
             initial={{ opacity: 0, y: -20 }}
@@ -61,40 +77,40 @@ const Header = () => {
         ))}
       </nav>
       <div className="flex items-center space-x-4">
-      <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative group px-4 py-2 hover:bg-blue-50/50"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="flex items-center space-x-3"
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
-                      <User className="h-5 w-5 text-white" />
-                    </div>
-                    <span className="font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
-                      {user?.firstName} {user?.lastName}
-                    </span>
-                  </motion.div>
-                </Button>
-              </DropdownMenuTrigger>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="relative group px-4 py-2 hover:bg-blue-50/50"
+            >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center space-x-3"
+              >
+                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-full flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <span className="font-medium text-gray-700 group-hover:text-blue-600 transition-colors">
+                  {user?.firstName} {user?.lastName}
+                </span>
+              </motion.div>
+            </Button>
+          </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 p-1">
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-600 hover:bg-red-50 cursor-pointer rounded-lg transition-all duration-200"
-                >
-                  <motion.div
-                    whileHover={{ x: 4 }}
-                    className="flex items-center space-x-2 py-1.5"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>ออกจากระบบ</span>
-                  </motion.div>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="text-red-600 hover:bg-red-50 cursor-pointer rounded-lg transition-all duration-200"
+            >
+              <motion.div
+                whileHover={{ x: 4 }}
+                className="flex items-center space-x-2 py-1.5"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>ออกจากระบบ</span>
+              </motion.div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
