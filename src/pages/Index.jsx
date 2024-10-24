@@ -10,6 +10,7 @@ const Index = () => {
   const [activeForm, setActiveForm] = React.useState("login");
   const { isAuthenticated } = useAuth();
 
+  // Redirect if authenticated
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }

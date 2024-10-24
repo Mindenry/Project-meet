@@ -11,6 +11,7 @@ const LoginForm = ({ onToggleForm }) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,10 +32,7 @@ const LoginForm = ({ onToggleForm }) => {
           lastName: "User"
         };
         
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('user', JSON.stringify(adminData));
-        storage.setItem('isAuthenticated', 'true');
-        
+        login(adminData, rememberMe);
         toast.success("เข้าสู่ระบบสำเร็จ");
         navigate('/dashboard');
         return;
@@ -56,10 +54,7 @@ const LoginForm = ({ onToggleForm }) => {
           role: "user",
         };
         
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem('user', JSON.stringify(userData));
-        storage.setItem('isAuthenticated', 'true');
-
+        login(userData, rememberMe);
         toast.success("เข้าสู่ระบบสำเร็จ");
         navigate('/dashboard');
       } else {
