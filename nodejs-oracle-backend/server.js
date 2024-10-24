@@ -389,10 +389,59 @@ app.get("/user-bookings/:ssn", async (req, res) => {
       .json({ error: "Error fetching user bookings", details: err.message });
   }
 });
+
+app.post("/reset-reserve-sequence", async (req, res) => {
+  try {
+    // Drop existing sequence
+    await executeQuery(
+      "DROP SEQUENCE RESERVERID_SEQ",
+      [],
+      { autoCommit: true }
+    );
+
+    // Create new sequence starting from 1
+    await executeQuery(
+      "CREATE SEQUENCE RESERVERID_SEQ START WITH 1 INCREMENT BY 1",
+      [],
+      { autoCommit: true }
+    );
+
+    res.json({ message: "Sequence reset successfully" });
+  } catch (err) {
+    console.error("Error resetting sequence:", err);
+    res.status(500).json({ 
+      error: "Error resetting sequence", 
+      details: err.message 
+    });
+  }
+});
+
+
 // Book Room Route
 app.post("/book-room", async (req, res) => {
   const { date, startTime, endTime, room, essn } = req.body;
   try {
+    // Check if there are any existing reservations
+    const existingReservations = await executeQuery(
+      "SELECT COUNT(*) as count FROM RESERVE",
+      [],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    // If no reservations exist, reset the sequence
+    if (existingReservations.rows[0].COUNT === 0) {
+      await executeQuery(
+        "DROP SEQUENCE RESERVERID_SEQ",
+        [],
+        { autoCommit: true }
+      );
+      await executeQuery(
+        "CREATE SEQUENCE RESERVERID_SEQ START WITH 1 INCREMENT BY 1",
+        [],
+        { autoCommit: true }
+      );
+    }
+
     const qrCode = `QR${Date.now()}`;
     const result = await executeQuery(
       `INSERT INTO RESERVE (RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, STUBOOKING, ESSN, QR)
@@ -412,6 +461,7 @@ app.post("/book-room", async (req, res) => {
       ],
       { autoCommit: true }
     );
+
     const reserverId = result.outBinds[0][0];
     const bookingResult = await executeQuery(
       `SELECT RESERVERID, BDATE, STARTTIME, ENDTIME, CFRNUM, STUBOOKING, ESSN, QR
@@ -422,44 +472,13 @@ app.post("/book-room", async (req, res) => {
     res.status(201).json(bookingResult.rows[0]);
   } catch (err) {
     console.error("Error creating booking:", err);
-    res
-      .status(500)
-      .json({ error: "Error creating booking", details: err.message });
+    res.status(500).json({ 
+      error: "Error creating booking", 
+      details: err.message 
+    });
   }
 });
-// Cancel Booking Route
-app.post("/cancel-booking", async (req, res) => {
-  const { reserverId, essn } = req.body;
-  try {
-    const checkResult = await executeQuery(
-      `SELECT RESERVERID FROM RESERVE WHERE RESERVERID = :1 AND ESSN = :2`,
-      [reserverId, essn],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
-    if (checkResult.rows.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "Booking not found or not authorized" });
-    }
-    await executeQuery(
-      `UPDATE RESERVE SET STUBOOKING = 3 WHERE RESERVERID = :1`,
-      [reserverId],
-      { autoCommit: true }
-    );
-    await executeQuery(
-      `INSERT INTO CANCLEROOM (REASON, RESID, EMPID)
-       VALUES ('User cancelled', :1, :2)`,
-      [reserverId, essn],
-      { autoCommit: true }
-    );
-    res.json({ message: "Booking cancelled successfully" });
-  } catch (err) {
-    console.error("Error cancelling booking:", err);
-    res
-      .status(500)
-      .json({ error: "Error cancelling booking", details: err.message });
-  }
-});
+
 // Menu Routes
 app.get("/menus", async (req, res) => {
   try {

@@ -74,13 +74,20 @@ const PermissionsSection = () => {
   // ฟังก์ชันสำหรับจัดกลุ่มตำแหน่งที่มีสิทธิ์การเข้าถึงหลายอัน
   const groupPermissionsByRole = (permissions) => {
     return permissions.reduce((acc, current) => {
-      const { PNAME, MNAME, NO } = current; // รวม NO
+      const { PNAME, MNAME, NO, PNUM, MNUM } = current;
       const existingRole = acc.find((item) => item.PNAME === PNAME);
 
       if (existingRole) {
-        existingRole.MNAME.push(MNAME); // ถ้า PNAME มีอยู่แล้ว ให้เพิ่ม MNAME เข้าไปในอาร์เรย์
+        existingRole.MNAME.push(MNAME);
+        existingRole.MNUMS.push(MNUM);
       } else {
-        acc.push({ PNAME, MNAME: [MNAME], NO }); // ถ้ายังไม่มี ให้สร้างออบเจกต์ใหม่
+        acc.push({ 
+          PNAME, 
+          MNAME: [MNAME], 
+          NO, 
+          PNUM,
+          MNUMS: [MNUM]
+        });
       }
       return acc;
     }, []);
@@ -193,9 +200,7 @@ const PermissionsSection = () => {
   return (
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-2xl font-bold">
-          จัดการสิทธิ์การใช้งาน
-        </CardTitle>
+        <CardTitle className="text-2xl font-bold">จัดการสิทธิ์การใช้งาน</CardTitle>
         <div className="flex items-center space-x-2">
           <Button onClick={handleAddPermission} variant="outline">
             <Plus className="mr-2 h-4 w-4" /> เพิ่มตำแหน่ง
@@ -259,9 +264,9 @@ const PermissionsSection = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSavePermission}
-        permission={editingPermission} // ข้อมูลที่กำลังแก้ไข
-        positions={availablePositions} // ส่งตำแหน่ง
-        accessOptions={availableAccessOptions} // ส่งสิทธิ์การเข้าถึง (ข้อมูลจาก menus)
+        permission={editingPermission}
+        positions={availablePositions}
+        accessOptions={availableAccessOptions}
       />
     </Card>
   );
