@@ -41,10 +41,10 @@ const AboutSection = () => {
                   variant="secondary"
                   className="bg-blue-100 text-blue-800"
                 >
-                  1.2.1 Beta Early Access
+                  1.3 Beta Early Access
                 </Badge>
               </div>
-              <Progress value={85} className="h-2 bg-blue-100" />
+              <Progress value={95} className="h-2 bg-blue-100" />
             </div>
             <p className="text-sm text-gray-500">
               ผู้พัฒนา: ทีมพัฒนาซอฟต์แวร์ Team Avenger EIEI
