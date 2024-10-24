@@ -33,7 +33,7 @@ const LoginForm = ({ onToggleForm }) => {
         };
         
         login(adminData, rememberMe);
-        toast.success("เข้าสู่ระบบสำเร็จ");
+        // toast.success("เข้าสู่ระบบสำเร็จ");
         navigate('/dashboard');
         return;
       }
@@ -55,7 +55,7 @@ const LoginForm = ({ onToggleForm }) => {
         };
         
         login(userData, rememberMe);
-        toast.success("เข้าสู่ระบบสำเร็จ");
+        // toast.success("เข้าสู่ระบบสำเร็จ");
         navigate('/dashboard');
       } else {
         toast.error(data.error || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
